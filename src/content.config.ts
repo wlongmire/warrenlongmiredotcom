@@ -33,11 +33,13 @@ const pages = defineCollection({
 const timeline = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/timeline' }),
   schema: ({ image }) => z.object({
+    label: z.string().optional(),     // short tag shown first, e.g. "Design"
     title: z.string(),
     period: z.string(),               // e.g. "2019 to 2021", shown as a label
     org: z.string().optional(),
     order: z.number(),
     skills: z.array(z.string()).default([]),
+    link: z.object({ label: z.string(), url: z.string() }).optional(), // shown only once url is filled in
     image: image().optional(),        // optional; put files in src/assets/timeline/
     imageAlt: z.string().optional(),
   }),

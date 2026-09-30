@@ -5,4 +5,4 @@ headshot: "../../assets/headshot.jpg"
 headshotAlt: "Warren C. Longmire, in round glasses and a black shirt, with cloudy skies and mountains behind him"
 ---
 
-Fifteen years building software at companies like Microsoft and Electronic Arts taught me the value of process, teamwork and accountable. Now, as educator and learning experience developer, I use those skills to help others reach their potenial.
+Fifteen years building software at companies like Microsoft and Electronic Arts taught me the value of process, teamwork and accountability. Now, as educator and learning experience developer, I use those skills to help others reach their potential.
