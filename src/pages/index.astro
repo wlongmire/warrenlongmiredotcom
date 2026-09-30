@@ -1,0 +1,312 @@
+---
+import { getEntry, render } from 'astro:content';
+import { Image } from 'astro:assets';
+import Timeline from '../components/Timeline.astro';
+import Resume from '../components/Resume.astro';
+import { site } from '../data/site';
+import { mockCards, trackLabel, identityLine, filters } from '../data/mockCards';
+const about = await getEntry('pages', 'about');
+const { Content } = await render(about!);
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Warren Longmire</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script is:inline>
+    // Dark-first; remember a manual light choice. Set before paint to avoid a flash.
+    try { document.documentElement.dataset.theme = localStorage.getItem('b-theme') || 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
+  </script>
+</head>
+<body class="b">
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <!-- Real links laid over the constellation's bright dots; JS positions them. Order matches the cards. -->
+  <nav class="dots" aria-label="Case studies">
+    {mockCards.map((c, i) => (
+      <a class="dot" href={`#card-${i}`} data-tracks={c.tracks.join(' ')} aria-label={c.title} title={c.title}></a>
+    ))}
+  </nav>
+  <a class="skip" href="#work">Skip to work</a>
+
+  <header class="site-header">
+  <div class="bar wrap">
+    <a class="name" href="/">Warren Longmire</a>
+    <nav aria-label="Main">
+      <a href="#top">About Me</a><a href="#timeline">My Journey</a><a href="#work">Work</a><a href="#resume">Resumes</a>
+    </nav>
+    <button id="theme" type="button" aria-pressed="false" aria-label="Light theme">☀</button>
+    <a class="btn" href="mailto:warrenlongmire@gmail.com">Contact</a>
+  </div>
+  </header>
+
+  <section class="hero-full" aria-labelledby="hero-title">
+    <div class="hero-inner wrap">
+      <div class="hero-img">
+        {about!.data.headshot ? (
+          <Image src={about!.data.headshot} alt={about!.data.headshotAlt ?? ''} width={900} loading="eager" />
+        ) : (
+          <div class="hero-img-empty" aria-hidden="true">WL</div>
+        )}
+      </div>
+      <h1 id="hero-title">{identityLine}</h1>
+      <section id="about" class="about-card" aria-labelledby="about-title">
+        <h2 id="about-title">About me</h2>
+        <Content />
+      </section>
+    </div>
+  </section>
+
+  <Timeline />
+
+  <div id="work" class="work-band">
+  <main class="wrap" aria-labelledby="work-title">
+    <h2 id="work-title" class="section-title">Work History</h2>
+    <div class="chips" role="group" aria-label="Filter case studies">
+      {filters.map((f) => (
+        <button type="button" data-filter={f.id} aria-pressed={f.id === 'all'}>{f.label}</button>
+      ))}
+    </div>
+    <p id="filter-status" class="sr" role="status" aria-live="polite"></p>
+
+    <ul class="grid">
+      {mockCards.map((c, i) => (
+        <li data-tracks={c.tracks.join(' ')}>
+          <a class="card" id={`card-${i}`} href="#">
+            <h3>{c.title}</h3>
+            <p class="outcome">{c.outcome}</p>
+            <p class="role">{c.role}</p>
+            <p class="tags">{c.tracks.map((t) => <span>{trackLabel[t]}</span>)}</p>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+  </div>
+
+  <Resume />
+
+  <footer class="site-footer">
+    <div class="wrap foot">
+      <p class="foot-name">{site.name}</p>
+      <ul class="foot-links">
+        <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+        {site.links.filter((l) => l.url).map((l) => (
+          <li><a href={l.url} rel="me noopener">{l.label}</a></li>
+        ))}
+      </ul>
+      <p class="foot-copy">© {new Date().getFullYear()} {site.name}</p>
+    </div>
+  </footer>
+
+  <script>
+    import { initFilters } from '../scripts/filter';
+    initFilters();
+
+    // Theme toggle
+    const root = document.documentElement;
+    const toggle = document.getElementById('theme')!;
+    const sync = () => toggle.setAttribute('aria-pressed', String(root.dataset.theme === 'light'));
+    sync();
+    toggle.addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+      try { localStorage.setItem('b-theme', root.dataset.theme); } catch {}
+      sync(); draw();
+    });
+
+    // Static constellation: drawn once (and on resize / theme / filter change). No animation, no cursor.
+    // The bright dots are real links (.dot anchors) placed over the canvas, one per case study, in card order.
+    // Fainter dots fill the field.
+    const canvas = document.getElementById('stars') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+    let w = 0, h = 0;
+    type P = { x: number; y: number; big: boolean };
+    let pts: P[] = [];
+    const dots = Array.from(document.querySelectorAll<HTMLAnchorElement>('.dot'));
+    const N = dots.length;
+
+    function layout() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const hero = document.querySelector<HTMLElement>('.hero-full')!;
+      const headerBottom = document.querySelector<HTMLElement>('.site-header')!.offsetHeight;
+      w = window.innerWidth; h = hero.offsetTop + hero.offsetHeight; // canvas covers the whole hero
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.round(Math.min(70, w / 18));
+      // Fixed pseudo-random positions so the picture is identical on every load.
+      const frac = (a: number, b: number, i: number) => ((Math.sin(i * a) * b) % 1 + 1) % 1;
+
+      // Bright dots are links, so keep them off the photo, headline and About card (and off each other).
+      const avoid = ['.hero-img', '.hero-full h1', '.about-card'].map((sel) => {
+        const r = document.querySelector(sel)!.getBoundingClientRect();
+        return { l: r.left - 24, r: r.right + 24, t: r.top + scrollY - 24, b: r.bottom + scrollY + 24 };
+      });
+      const placed: P[] = [];
+      for (let i = 0; i < N; i++) {
+        let p: P = { x: 0, y: 0, big: true };
+        for (let k = 0; k < 80; k++) {
+          const seed = (i + 1) * 101 + k;
+          p = {
+            x: 24 + frac(12.9898, 43758.5453, seed) * (w - 48),
+            y: headerBottom + 24 + frac(78.233, 12345.6789, seed) * (h - headerBottom - 48),
+            big: true,
+          };
+          const clear = avoid.every((r) => p.x < r.l || p.x > r.r || p.y < r.t || p.y > r.b);
+          const apart = placed.every((q) => Math.hypot(p.x - q.x, p.y - q.y) > 70);
+          if (clear && apart) break;
+        }
+        placed.push(p);
+      }
+      const field: P[] = Array.from({ length: Math.max(0, count - N) }, (_, i) => ({
+        x: frac(12.9898, 43758.5453, i + 1) * w,
+        y: frac(78.233, 12345.6789, i + 1) * h,
+        big: false,
+      }));
+      pts = [...placed, ...field];
+      placed.forEach((p, i) => { dots[i].style.left = p.x + 'px'; dots[i].style.top = p.y + 'px'; });
+    }
+    function color(name: string) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+    function draw() {
+      const dot = color('--star'), accent = color('--amber');
+      ctx.clearRect(0, 0, w, h);
+      // Skip bright dots that are filtered out or hidden (phones show no dots).
+      const live = pts.filter((p, i) => i >= N || (!dots[i].hidden && dots[i].offsetParent !== null));
+      for (let i = 0; i < live.length; i++) {
+        for (let j = i + 1; j < live.length; j++) {
+          const d = Math.hypot(live[i].x - live[j].x, live[i].y - live[j].y);
+          if (d < 130) {
+            ctx.strokeStyle = dot; ctx.globalAlpha = (1 - d / 130) * 0.35;
+            ctx.beginPath(); ctx.moveTo(live[i].x, live[i].y); ctx.lineTo(live[j].x, live[j].y); ctx.stroke();
+          }
+        }
+      }
+      // Bright dots are drawn by the .dot links (CSS); the canvas only draws the faint field dots.
+      for (const p of live) {
+        if (p.big) continue;
+        ctx.globalAlpha = 0.6; ctx.fillStyle = dot;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    document.addEventListener('filtered', draw);
+    // Re-lay out whenever the hero changes size (window resize, web fonts arriving).
+    new ResizeObserver(() => { layout(); draw(); }).observe(document.querySelector('.hero-full')!);
+    layout(); draw();
+  </script>
+</body>
+</html>
+
+<style is:global>
+  /* Smooth scrolling between sections (skipped for reduced-motion users). scroll-padding keeps
+     jump targets clear of the sticky header. */
+  html { scroll-padding-top: 88px; }
+  @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+  @media (max-width: 640px) { html { scroll-padding-top: 110px; } }
+
+  html[data-theme='dark'] .b {
+    --bg: #0b1426; --text: #f4ecd8; --muted: #b9b3a3; --amber: #f0b34a; --star: #9fb3d9;
+    --card: #12203a; --rule: #24365a; --on-amber: #0b1426; --scrim: rgba(11, 20, 38, .72);
+  }
+  html[data-theme='light'] .b {
+    --bg: #f7f1e3; --text: #14203a; --muted: #4e556a; --amber: #9a5b00; --star: #3d5088;
+    --card: #ffffff; --rule: #ddd3bd; --on-amber: #ffffff; --scrim: rgba(247, 241, 227, .8);
+  }
+  .b { margin: 0; background: var(--bg); color: var(--text); font: 400 17px/1.55 'Inter', system-ui, sans-serif; transition: background .3s, color .3s; }
+  .b * { box-sizing: border-box; }
+  .b .wrap { position: relative; max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .b a { color: inherit; }
+  .b a:focus-visible, .b button:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+  .b .skip { position: absolute; left: -999px; top: 8px; background: var(--amber); color: var(--on-amber); padding: 8px 12px; z-index: 200; }
+  .b .skip:focus { left: 8px; }
+  .b .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  .b #stars { position: absolute; top: 0; left: 0; width: 100%; pointer-events: none; z-index: 0; }
+
+  .b .dots { position: absolute; top: 0; left: 0; width: 100%; height: 0; z-index: 3; }
+  /* 24px hit area (WCAG target size), 9px visible dot. */
+  .b .dot { position: absolute; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; display: block; }
+  .b .dot::after { content: ''; position: absolute; inset: 7.5px; border-radius: 50%; background: var(--amber); transition: transform .2s, box-shadow .2s; }
+  .b .dot:hover::after, .b .dot:focus-visible::after { transform: scale(1.7); box-shadow: 0 0 0 4px color-mix(in srgb, var(--amber) 30%, transparent); }
+  .b .dot[hidden] { display: none; }
+
+  /* Sticky header: full-width so the tint spans the page; the inner .bar keeps the content width. */
+  .b .site-header { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+
+  .b .bar { display: flex; align-items: center; gap: 20px; padding-top: 20px; padding-bottom: 20px; z-index: 2; }
+  .b .name { font: 600 20px 'Fraunces', Georgia, serif; text-decoration: none; margin-right: auto; }
+  .b .bar nav { display: flex; gap: 20px; font-weight: 500; }
+  .b .bar nav a { text-decoration: none; }
+  .b .bar nav a:hover { color: var(--amber); }
+  .b #theme { background: none; border: 1.5px solid var(--rule); color: var(--text); width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+  .b #theme:hover { border-color: var(--amber); }
+  .b .btn { background: var(--amber); color: var(--on-amber); text-decoration: none; padding: 10px 18px; border-radius: 4px; font-weight: 600; }
+
+  /* Full-bleed hero: the section spans the page; the photo, headline and About card are laid out in the content width. */
+  .b .hero-full { position: relative; z-index: 2; }
+  /* Hero fills the screen under the sticky header (88px); 720px floor for short windows. */
+  .b .hero-full .hero-inner { position: relative; min-height: max(720px, calc(100svh - 88px)); }
+  .b .hero-img { position: absolute; left: 0; top: 56px; bottom: 112px; width: 52%; min-width: 300px; z-index: 1; border-radius: 6px; overflow: hidden; background: var(--card); border: 1px solid var(--rule); }
+  /* Full portrait, anchored to the bottom and scaled ~10% so the eyes land at the slot's vertical centre
+     (eyes sit ~56% down this photo). Re-tune scale if the photo changes. */
+  .b .hero-img img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; display: block; transform: scale(1.1); transform-origin: 50% 100%; }
+  .b .hero-img-empty { width: 100%; height: 100%; display: grid; place-items: end start; padding: 28px; color: var(--muted); font: 600 96px/1 'Fraunces', Georgia, serif; background: linear-gradient(160deg, var(--rule), var(--card)); }
+  /* Scrim so the headline stays readable where it crosses a real photo (dark in dark theme, light in light theme). */
+  .b .hero-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, var(--scrim), transparent 65%); }
+  .b .hero-full h1 { position: relative; z-index: 2; margin: 0; padding: 100px 24px 0; font: 400 clamp(30px, 4.6vw, 54px)/1.12 'Fraunces', Georgia, serif; max-width: 20em; text-wrap: balance; }
+  .b .about-card { position: absolute; z-index: 2; left: 17%; right: 6%; bottom: 80px; padding: 36px 48px 40px; border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 20px 48px rgba(0,0,0,.25);
+    /* See-through so the photo shows behind it; the blur keeps the text legible. */
+    background: color-mix(in srgb, var(--card) 55%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  .b .about-card h2 { font: 600 28px/1.2 'Fraunces', Georgia, serif; margin: 0 0 12px; }
+  .b .about-card p { margin: 0 0 1em; max-width: 38em; }
+  .b .about-card p:last-child { margin-bottom: 0; }
+  @media (max-width: 720px) {
+    .b .hero-full .hero-inner { min-height: 0; padding-top: 24px; padding-bottom: 40px; }
+    .b .hero-img { position: relative; inset: auto; width: 100%; height: 440px; }
+    .b .hero-full h1 { position: absolute; top: 24px; left: 0; right: 0; padding: 40px 32px 0; }
+    .b .about-card { position: relative; left: auto; right: auto; bottom: auto; margin: -64px 12px 0; padding: 28px 24px; }
+  }
+
+  /* Full-width rule above the section, matching Timeline and Resumes. */
+  .b .work-band { position: relative; z-index: 2; border-top: 1px solid var(--rule); }
+  .b .section-title { font: 600 clamp(28px, 4vw, 40px)/1.15 'Fraunces', Georgia, serif; margin: 0 0 32px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
+  .b main.wrap { padding-top: 72px; padding-bottom: 128px; z-index: 2; }
+  .b .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .b .chips button { font: 500 15px 'Inter', sans-serif; color: var(--text); background: transparent; border: 1.5px solid var(--rule); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  .b .chips button[aria-pressed='true'] { background: var(--amber); border-color: var(--amber); color: var(--on-amber); }
+
+  .b .grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .b .grid li[hidden] { display: none; }
+  .b .card { display: flex; flex-direction: column; height: 100%; text-decoration: none; background: var(--card); border: 1px solid var(--rule); border-radius: 8px; padding: 22px; transition: border-color .2s, transform .2s; }
+  .b .card:hover { border-color: var(--amber); transform: translateY(-3px); }
+  .b .card h3 { font: 600 24px/1.2 'Fraunces', Georgia, serif; margin: 0 0 10px; }
+  .b .outcome { margin: 0 0 14px; }
+  .b .role { margin: 0; color: var(--muted); font-size: 14px; }
+  .b .tags { margin: auto 0 0; padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .b .tags span { font-size: 12px; font-weight: 600; color: var(--amber); border: 1px solid currentColor; padding: 2px 8px; border-radius: 999px; }
+
+  .b .site-footer { position: relative; z-index: 2; border-top: 1px solid var(--rule); }
+  .b .foot { padding-top: 32px; padding-bottom: 40px; color: var(--muted); font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 32px; }
+  .b .foot-name { font: 600 18px 'Fraunces', Georgia, serif; color: var(--text); margin: 0; margin-right: auto; }
+  .b .foot-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; }
+  .b .foot a { text-underline-offset: 4px; }
+  .b .foot a:hover { color: var(--amber); }
+  .b .foot-copy { margin: 0; flex-basis: 100%; font-size: 13px; }
+
+  @media (max-width: 640px) {
+    .b .bar { flex-wrap: wrap; gap: 8px 10px; padding-top: 12px; padding-bottom: 10px; }
+    .b .name { font-size: 17px; }
+    .b #theme { width: 36px; height: 36px; }
+    .b .btn { padding: 8px 12px; }
+    .b .bar nav { order: 4; width: 100%; gap: 18px; font-size: 15px; }
+  }
+  /* On phones the hero has no free space for link dots; the cards are one scroll away. */
+  @media (max-width: 720px) { .b .dots { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .b, .b .card, .b .dot::after { transition: none; }
+    .b .card:hover { transform: none; }
+  }
+</style>

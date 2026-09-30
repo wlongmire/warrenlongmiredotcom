@@ -1,0 +1,159 @@
+---
+// Career timeline, one step at a time, sized to one screen.
+// Content comes from src/content/timeline/*.md (edit those, not this file).
+// Without JavaScript every step is shown stacked; the script turns it into a one-at-a-time view.
+import { getCollection, render } from 'astro:content';
+import { Image } from 'astro:assets';
+
+const entries = (await getCollection('timeline')).sort((a, b) => a.data.order - b.data.order);
+const steps = await Promise.all(
+  entries.map(async (entry) => ({ entry, Content: (await render(entry)).Content })),
+);
+---
+<section id="timeline" class="timeline" aria-labelledby="timeline-title" data-timeline>
+  <div class="wrap tl-inner">
+    <div class="tl-head">
+      <h2 id="timeline-title">My Journey</h2>
+    </div>
+
+    <div class="tl-stage">
+      {steps.map(({ entry, Content }, i) => (
+        <article class="tl-step" id={`step-${entry.id}`} role="tabpanel" aria-labelledby={`tab-${entry.id}`}>
+          <div class="tl-media">
+            {entry.data.image ? (
+              <Image src={entry.data.image} alt={entry.data.imageAlt ?? ''} width={900} loading={i === 0 ? 'eager' : 'lazy'} />
+            ) : (
+              <div class="tl-media-empty" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+            )}
+          </div>
+          <div class="tl-body">
+            <p class="tl-period">{entry.data.period}{entry.data.org ? ` · ${entry.data.org}` : ''}</p>
+            <h3>{entry.data.title}</h3>
+            <div class="tl-text"><Content /></div>
+            {entry.data.skills.length > 0 && (
+              <ul class="tl-pills" aria-label="Skills from this time">
+                {entry.data.skills.map((skill) => <li>{skill}</li>)}
+              </ul>
+            )}
+          </div>
+        </article>
+      ))}
+
+      <div class="tl-controls">
+        <button type="button" class="tl-prev" aria-label="Previous moment">←</button>
+        <div class="tl-nav" role="tablist" aria-label="Journey moments">
+          {steps.map(({ entry }, i) => (
+            <button type="button" role="tab" id={`tab-${entry.id}`} aria-controls={`step-${entry.id}`}
+                    aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} title={entry.data.period}>
+              Moment {i + 1}
+            </button>
+          ))}
+        </div>
+        <button type="button" class="tl-next" aria-label="Next moment">→</button>
+        <span class="tl-count sr" aria-live="polite"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .timeline { position: relative; z-index: 2; border-top: 1px solid var(--rule); display: flex; flex-direction: column; box-sizing: border-box;
+    /* One screen tall: viewport minus the 88px sticky header (640px floor). Padding lives here, not on .wrap, which resets it. */
+    min-height: max(640px, calc(100svh - 88px)); padding: 96px 0 48px; }
+  .tl-inner { flex: 1; display: flex; flex-direction: column; width: 100%; min-height: 0; }
+
+  .tl-head { padding-bottom: 20px; margin-bottom: 32px; border-bottom: 1px solid var(--rule); }
+  .timeline h2 { font: 600 clamp(28px, 4vw, 40px)/1.15 'Fraunces', Georgia, serif; margin: 0; }
+
+  /* Stage: photo on the left, text on the right, controls tucked under the text (right column). */
+  .tl-stage { position: relative; flex: 1; min-height: 0; display: flex; }
+  .tl-step { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+  .tl-step[hidden] { display: none; }
+  /* Without JS the steps stack; with JS they are shown one at a time. */
+  .timeline:not(.tl-js) .tl-stage { flex-direction: column; gap: 48px; }
+  .timeline:not(.tl-js) .tl-controls { display: none; }
+
+  .tl-media { align-self: stretch; min-height: 0; display: flex; }
+  .tl-media img, .tl-media-empty { width: 100%; height: 100%; max-height: 480px; align-self: center; object-fit: cover; border-radius: 16px; border: 1px solid var(--rule); display: block; }
+  .tl-media-empty { display: grid; place-items: center; background: linear-gradient(160deg, var(--rule), var(--card)); color: var(--muted); font: 600 72px 'Fraunces', Georgia, serif; }
+
+  .tl-body { max-height: 100%; overflow-y: auto; padding-bottom: 88px; }
+  .tl-period { margin: 0 0 6px; color: var(--amber); font-size: 18px; font-weight: 600; }
+  .tl-body h3 { font: 600 clamp(26px, 3.4vw, 36px)/1.15 'Fraunces', Georgia, serif; margin: 0 0 16px; }
+  .tl-text :global(p) { margin: 0 0 1em; max-width: 38em; }
+  .tl-pills { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tl-pills li { font-size: 12px; font-weight: 600; color: var(--amber); border: 1px solid currentColor; padding: 3px 10px; border-radius: 999px; }
+
+  /* Controls: [<] [Moment 1] [Moment 2] ... [>], pinned to the bottom of the right column. */
+  .tl-controls { position: absolute; bottom: 0; left: calc(50% + 28px); right: 0; display: flex; align-items: center; gap: 12px; }
+  .tl-nav { position: relative; flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .tl-nav::-webkit-scrollbar { display: none; }
+  .tl-nav button { flex: none; font: 600 14px 'Inter', system-ui, sans-serif; color: var(--text); background: var(--bg); border: 2px solid var(--amber); border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  .tl-nav button:hover { background: color-mix(in srgb, var(--amber) 18%, var(--bg)); }
+  .tl-nav button[aria-selected='true'] { background: var(--amber); color: var(--on-amber); }
+  .tl-prev, .tl-next { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--rule); background: transparent; color: var(--text); font-size: 18px; cursor: pointer; }
+  .tl-prev:hover:not(:disabled), .tl-next:hover:not(:disabled) { border-color: var(--amber); color: var(--amber); }
+  .tl-prev:disabled, .tl-next:disabled { opacity: .35; cursor: default; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (max-width: 720px) {
+    .timeline { min-height: 0; padding-top: 56px; }
+    .tl-stage { flex-direction: column; }
+    .tl-step { grid-template-columns: 1fr; gap: 16px; align-content: start; }
+    .tl-media img, .tl-media-empty { max-height: 220px; }
+    .tl-body { overflow: visible; padding-bottom: 0; }
+    .tl-controls { position: static; margin-top: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tl-step:not([hidden]) { animation: tl-in .35s ease; }
+    @keyframes tl-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<script>
+  // One-at-a-time timeline: tabs + prev/next, arrow keys, and #step-... deep links.
+  document.querySelectorAll<HTMLElement>('[data-timeline]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('[role="tabpanel"]'));
+    const prev = root.querySelector<HTMLButtonElement>('.tl-prev')!;
+    const next = root.querySelector<HTMLButtonElement>('.tl-next')!;
+    const count = root.querySelector<HTMLElement>('.tl-count')!;
+    if (!tabs.length) return;
+    root.classList.add('tl-js');
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function show(i: number, focusTab = false) {
+      i = Math.max(0, Math.min(tabs.length - 1, i));
+      tabs.forEach((t, n) => {
+        t.setAttribute('aria-selected', String(n === i));
+        t.tabIndex = n === i ? 0 : -1;
+      });
+      panels.forEach((p, n) => { p.hidden = n !== i; });
+      prev.disabled = i === 0;
+      next.disabled = i === tabs.length - 1;
+      count.textContent = `${i + 1} of ${tabs.length}`;
+      // Keep the active pill in view inside the strip (scrolls the strip only, never the page).
+      const nav = tabs[i].parentElement as HTMLElement;
+      const target = tabs[i].offsetLeft - (nav.clientWidth - tabs[i].offsetWidth) / 2;
+      nav.scrollTo({ left: Math.max(0, target), behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+      if (focusTab) tabs[i].focus({ preventScroll: true });
+      current = i;
+    }
+    let current = 0;
+
+    tabs.forEach((t, n) => t.addEventListener('click', () => show(n)));
+    prev.addEventListener('click', () => show(current - 1));
+    next.addEventListener('click', () => show(current + 1));
+    root.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
+      const k = (e as KeyboardEvent).key;
+      if (k === 'ArrowRight') { e.preventDefault(); show(current + 1, true); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); show(current - 1, true); }
+      else if (k === 'Home') { e.preventDefault(); show(0, true); }
+      else if (k === 'End') { e.preventDefault(); show(tabs.length - 1, true); }
+    });
+
+    // Deep link like /#step-01-placeholder opens that step.
+    const fromHash = panels.findIndex((p) => `#${p.id}` === location.hash);
+    show(fromHash >= 0 ? fromHash : 0);
+  });
+</script>
