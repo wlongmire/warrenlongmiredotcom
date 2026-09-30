@@ -13,9 +13,9 @@ export const site = {
   contactEndpoint: 'https://formspree.io/f/xjykljyb',
   // Choices in the contact form's "reason" dropdown.
   contactReasons: [
-    'Hiring or job opportunity',
+    'Hiring opportunity',
     'Instructional design or L&D project',
-    'Technical teaching or workshop',
+    'Technical Teaching or workshop',
     'Engineering or software project',
     'Design or UX project',
     'Speaking or collaboration',

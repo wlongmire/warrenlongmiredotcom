@@ -24,7 +24,7 @@ export const mockCards: MockCard[] = [
 ];
 
 export const identityLine =
-  'Developer of curriculum, software and learning experiences for people who build.';
+  'Developer of curriculum, software and learning experiences for learners like you.';
 
 export const filters = [
   { id: 'all', label: 'All' },
