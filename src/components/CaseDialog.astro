@@ -1,0 +1,173 @@
+---
+// "More info" popup for case study cards. Opens from any button with [data-case="<slug>"].
+// Everything shown comes from the case study's Markdown file in src/content/work/:
+// the body is the deeper description; images, artifacts and links are optional front matter.
+import { Image } from 'astro:assets';
+import { trackLabel } from '../data/home';
+
+const { cases } = Astro.props as { cases: { entry: any; Content: any }[] };
+---
+<dialog id="case-dialog" class="case" aria-labelledby="case-title">
+  <div class="cs-top">
+    <div>
+      <h2 id="case-title"></h2>
+      <p class="cs-meta"></p>
+    </div>
+    <button type="button" class="cs-close" aria-label="Close case study details" data-close>×</button>
+  </div>
+  <div class="cs-content"></div>
+</dialog>
+
+<!-- One template per case study; the script copies the one that was clicked into the popup. -->
+{cases.map(({ entry, Content }) => {
+  const d = entry.data;
+  const meta = [d.role, d.title.includes(d.org) ? '' : d.org, d.dates].filter(Boolean).join(' · ');
+  const artifacts = d.artifacts.filter((a: any) => a.url);
+  const links = d.links.filter((l: any) => l.url);
+  return (
+    <template data-case-template={entry.id} data-title={d.title} data-meta={meta}>
+      {d.images.length > 0 && (
+        <div class="cs-gallery" data-count={d.images.length}>
+          <div class="cs-frames">
+            {d.images.map((img: any, i: number) => (
+              <figure class="cs-frame" hidden={i > 0}>
+                <Image src={img.src} alt={img.alt} width={1200} loading="eager" class={img.fit === 'cover' ? 'cs-cover' : undefined} />
+                {img.caption && <figcaption>{img.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+          {d.images.length > 1 && (
+            <div class="cs-gallery-controls">
+              <button type="button" class="cs-gprev" aria-label="Previous image">←</button>
+              <span class="cs-gcount" aria-live="polite"></span>
+              <button type="button" class="cs-gnext" aria-label="Next image">→</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <p class="cs-outcome">{d.outcome}</p>
+      <div class="cs-text"><Content /></div>
+
+      {artifacts.length > 0 && (
+        <section class="cs-block" aria-labelledby={`art-${entry.id}`}>
+          <h3 id={`art-${entry.id}`}>Artifacts</h3>
+          <ul class="cs-list">
+            {artifacts.map((a: any) => (
+              <li><a href={a.url} target="_blank" rel="noopener noreferrer">{a.label} <span aria-hidden="true">↗</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {links.length > 0 && (
+        <section class="cs-block" aria-labelledby={`lnk-${entry.id}`}>
+          <h3 id={`lnk-${entry.id}`}>Links</h3>
+          <ul class="cs-list">
+            {links.map((l: any) => (
+              <li><a href={l.url} target="_blank" rel="noopener noreferrer">{l.label} <span aria-hidden="true">↗</span></a></li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(d.tracks.length > 0 || d.tools.length > 0) && (
+        <ul class="cs-pills" aria-label="Tags">
+          {d.tracks.map((t: keyof typeof trackLabel) => <li class="cs-pill-track">{trackLabel[t]}</li>)}
+          {d.tools.map((t: string) => <li>{t}</li>)}
+        </ul>
+      )}
+    </template>
+  );
+})}
+
+<style>
+  .case { width: min(820px, calc(100vw - 32px)); max-height: calc(100svh - 32px); padding: 0; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); color: var(--text); font: 400 16px/1.55 'Inter', system-ui, sans-serif; box-shadow: 0 24px 64px rgba(0, 0, 0, .45); overflow: auto; overscroll-behavior: contain; }
+  .case::backdrop { background: rgba(5, 10, 20, .7); backdrop-filter: blur(3px); }
+  .cs-top { position: sticky; top: 0; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px 16px; background: var(--card); border-bottom: 1px solid var(--rule); }
+  .case h2 { font: 600 clamp(22px, 3.4vw, 30px)/1.2 'Fraunces', Georgia, serif; margin: 0 0 4px; }
+  .cs-meta { margin: 0; color: var(--amber); font-size: 14px; font-weight: 600; }
+  .cs-close { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--rule); background: transparent; color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; }
+  .cs-close:hover { border-color: var(--amber); color: var(--amber); }
+  .cs-close:focus-visible, .cs-content :global(button:focus-visible), .cs-content :global(a:focus-visible) { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .cs-content { padding: 24px; }
+
+  .cs-content :global(.cs-outcome) { margin: 0 0 16px; font-size: 18px; font-weight: 600; }
+  .cs-content :global(.cs-text p) { margin: 0 0 1em; max-width: 40em; color: var(--text); }
+  .cs-content :global(.cs-text h3) { font: 600 18px 'Fraunces', Georgia, serif; margin: 24px 0 8px; color: var(--amber); }
+  .cs-content :global(.cs-text h3:first-child) { margin-top: 0; }
+  .cs-content :global(.cs-text ul) { margin: 0 0 1em; padding-left: 1.25em; max-width: 40em; }
+  .cs-content :global(.cs-text li) { margin-bottom: 6px; }
+
+  /* Gallery: one image at a time, arrows and a counter when there are several. */
+  .cs-content :global(.cs-gallery) { margin: 0 0 24px; }
+  .cs-content :global(.cs-frame) { margin: 0; }
+  .cs-content :global(.cs-frame[hidden]) { display: none; }
+  .cs-content :global(.cs-frame img) { display: block; width: 100%; height: auto; max-height: 52svh; object-fit: contain; background: var(--bg); border: 1px solid var(--rule); border-radius: 8px; }
+  .cs-content :global(.cs-frame img.cs-cover) { aspect-ratio: 16 / 7; height: auto; object-fit: cover; object-position: center 50%; }
+  .cs-content :global(figcaption) { margin-top: 8px; color: var(--muted); font-size: 14px; }
+  .cs-content :global(.cs-gallery-controls) { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
+  .cs-content :global(.cs-gallery-controls button) { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--rule); background: transparent; color: var(--text); font-size: 18px; cursor: pointer; }
+  .cs-content :global(.cs-gallery-controls button:hover) { border-color: var(--amber); color: var(--amber); }
+  .cs-content :global(.cs-gcount) { color: var(--muted); font-size: 14px; min-width: 4.5em; text-align: center; }
+
+  .cs-content :global(.cs-block) { margin: 24px 0 0; padding-top: 20px; border-top: 1px solid var(--rule); }
+  .cs-content :global(.cs-block h3) { font: 600 18px 'Fraunces', Georgia, serif; margin: 0 0 10px; }
+  .cs-content :global(.cs-list) { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .cs-content :global(.cs-list a) { color: var(--amber); text-underline-offset: 4px; }
+
+  .cs-content :global(.cs-pills) { list-style: none; margin: 24px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .cs-content :global(.cs-pills li) { font-size: 12px; font-weight: 600; color: var(--amber); border: 1px solid currentColor; padding: 3px 10px; border-radius: 999px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .case[open] { animation: cs-in .2s ease; }
+    @keyframes cs-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<script>
+  const dialog = document.getElementById('case-dialog') as HTMLDialogElement | null;
+  if (dialog) {
+    const title = dialog.querySelector<HTMLElement>('#case-title')!;
+    const meta = dialog.querySelector<HTMLElement>('.cs-meta')!;
+    const content = dialog.querySelector<HTMLElement>('.cs-content')!;
+
+    function initGallery(root: HTMLElement) {
+      const frames = Array.from(root.querySelectorAll<HTMLElement>('.cs-frame'));
+      const count = root.querySelector<HTMLElement>('.cs-gcount');
+      const prev = root.querySelector<HTMLButtonElement>('.cs-gprev');
+      const next = root.querySelector<HTMLButtonElement>('.cs-gnext');
+      if (!frames.length || !prev || !next || !count) return;
+      let i = 0;
+      const show = (n: number) => {
+        i = (n + frames.length) % frames.length;
+        frames.forEach((f, k) => { f.hidden = k !== i; });
+        count.textContent = `${i + 1} of ${frames.length}`;
+      };
+      prev.addEventListener('click', () => show(i - 1));
+      next.addEventListener('click', () => show(i + 1));
+      root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); show(i - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); show(i + 1); }
+      });
+      show(0);
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-case]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        const tpl = document.querySelector<HTMLTemplateElement>(`template[data-case-template="${btn.dataset.case}"]`);
+        if (!tpl) return;
+        title.textContent = tpl.dataset.title ?? '';
+        meta.textContent = tpl.dataset.meta ?? '';
+        content.replaceChildren(tpl.content.cloneNode(true));
+        const gallery = content.querySelector<HTMLElement>('.cs-gallery');
+        if (gallery) initGallery(gallery);
+        dialog.showModal();
+        dialog.scrollTop = 0;
+      }),
+    );
+    dialog.querySelector('[data-close]')!.addEventListener('click', () => dialog.close());
+    // Click on the dimmed backdrop closes it.
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+  }
+</script>

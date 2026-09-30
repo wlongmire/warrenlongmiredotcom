@@ -4,18 +4,28 @@ import { z } from 'astro/zod';
 
 const work = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/work' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     outcome: z.string(),
     role: z.string(),
     org: z.string(),
     dates: z.string(),
-    audience: z.string(),
+    audience: z.string().optional(),
     tools: z.array(z.string()).default([]),
     tracks: z.array(z.enum(['learning-design', 'teaching', 'engineering', 'design-ux'])).default([]),
     cover: z.string().optional(),
     confidential: z.boolean().default(false),
     draft: z.boolean().default(false),
+    order: z.number().default(999),   // card order on the homepage (1 = first)
+    // Shown in the "More info" popup. Every one of these is optional; empty ones are simply not shown.
+    images: z.array(z.object({
+      src: image(),
+      alt: z.string(),
+      caption: z.string().optional(),
+      fit: z.enum(['contain', 'cover']).default('contain'), // 'cover' crops to a wide banner (good for a logo on a square canvas)
+    })).default([]),
+    artifacts: z.array(z.object({ label: z.string(), url: z.string() })).default([]), // samples, PDFs, files
+    links: z.array(z.object({ label: z.string(), url: z.string() })).default([]),     // outside pages
   }),
 });
 
