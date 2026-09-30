@@ -3,6 +3,7 @@ import { getEntry, render } from 'astro:content';
 import { Image } from 'astro:assets';
 import Timeline from '../components/Timeline.astro';
 import Resume from '../components/Resume.astro';
+import ContactDialog from '../components/ContactDialog.astro';
 import { site } from '../data/site';
 import { mockCards, trackLabel, identityLine, filters } from '../data/mockCards';
 const about = await getEntry('pages', 'about');
@@ -13,7 +14,7 @@ const { Content } = await render(about!);
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Warren Longmire</title>
+  <title>{site.name}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -34,12 +35,12 @@ const { Content } = await render(about!);
 
   <header class="site-header">
   <div class="bar wrap">
-    <a class="name" href="/">Warren Longmire</a>
+    <a class="name" href="/">{site.name}</a>
     <nav aria-label="Main">
       <a href="#top">About Me</a><a href="#timeline">My Journey</a><a href="#work">Work</a><a href="#resume">Resumes</a>
     </nav>
     <button id="theme" type="button" aria-pressed="false" aria-label="Light theme">☀</button>
-    <a class="btn" href="mailto:warrenlongmire@gmail.com">Contact</a>
+    <a class="btn" href="mailto:warrenlongmire@gmail.com" data-open-contact>Contact</a>
   </div>
   </header>
 
@@ -101,6 +102,8 @@ const { Content } = await render(about!);
       <p class="foot-copy">© {new Date().getFullYear()} {site.name}</p>
     </div>
   </footer>
+
+  <ContactDialog />
 
   <script>
     import { initFilters } from '../scripts/filter';

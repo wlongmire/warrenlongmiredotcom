@@ -1,0 +1,199 @@
+---
+// Contact form popup. Opens from any element with [data-open-contact] (the header Contact button).
+// Where messages go is set in src/data/site.ts (contactEndpoint); the reason choices live there too.
+import { site } from '../data/site';
+---
+<dialog id="contact-dialog" class="contact" aria-labelledby="contact-title" data-endpoint={site.contactEndpoint} data-email={site.email}>
+  <form method="dialog" class="ct-form" novalidate>
+    <div class="ct-top">
+      <h2 id="contact-title">Get in touch</h2>
+      <button type="button" class="ct-close" aria-label="Close contact form" data-close>×</button>
+    </div>
+
+    <div class="ct-body">
+      <p class="ct-field">
+        <label for="ct-name">Name</label>
+        <input id="ct-name" name="name" type="text" autocomplete="name" required />
+      </p>
+      <p class="ct-field">
+        <label for="ct-email">Email</label>
+        <input id="ct-email" name="email" type="email" autocomplete="email" required />
+      </p>
+      <p class="ct-field">
+        <label for="ct-reason">What's this about?</label>
+        <select id="ct-reason" name="reason" required>
+          <option value="" disabled selected>Choose a reason</option>
+          {site.contactReasons.map((r) => <option value={r}>{r}</option>)}
+        </select>
+      </p>
+      <p class="ct-field">
+        <label for="ct-message">Message</label>
+        <textarea id="ct-message" name="message" rows="5" required></textarea>
+      </p>
+      <!-- Spam trap: people never see or fill this; bots often do. -->
+      <p class="ct-trap" aria-hidden="true">
+        <label>Leave this empty <input name="company" type="text" tabindex="-1" autocomplete="off" /></label>
+      </p>
+
+      <p class="ct-status" role="status" aria-live="polite"></p>
+      <button type="submit" class="ct-send">Send</button>
+    </div>
+  </form>
+
+  <!-- Shown after a successful send (and while the cooldown lasts) instead of the form. -->
+  <div class="ct-done" hidden>
+    <div class="ct-top">
+      <h2 id="contact-done-title" tabindex="-1">Message sent</h2>
+      <button type="button" class="ct-close" aria-label="Close" data-close>×</button>
+    </div>
+    <div class="ct-body">
+      <p class="ct-check" aria-hidden="true">✓</p>
+      <p class="ct-done-text" role="status" aria-live="polite"></p>
+      <p class="ct-done-sub">I read every message and will reply to the email you gave me.</p>
+      <div class="ct-done-actions">
+        <button type="button" class="ct-send ct-done-close" data-close>Close</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .contact { width: min(520px, calc(100vw - 32px)); max-height: calc(100svh - 32px); padding: 0; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); color: var(--text); font: 400 16px/1.5 'Inter', system-ui, sans-serif; box-shadow: 0 24px 64px rgba(0, 0, 0, .45); overflow: auto; }
+  .contact::backdrop { background: rgba(5, 10, 20, .65); backdrop-filter: blur(3px); }
+  .ct-top { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+  .contact h2 { font: 600 26px/1.2 'Fraunces', Georgia, serif; margin: 0; }
+  .ct-close { width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--rule); background: transparent; color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; }
+  .ct-close:hover { border-color: var(--amber); color: var(--amber); }
+  .ct-body { padding: 16px 24px 24px; }
+  .ct-field { margin: 0 0 16px; }
+  .ct-field label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .ct-field input, .ct-field select, .ct-field textarea { width: 100%; box-sizing: border-box; font: inherit; color: var(--text); background: var(--bg); border: 1.5px solid var(--rule); border-radius: 6px; padding: 10px 12px; }
+  .ct-field textarea { resize: vertical; min-height: 120px; }
+  .ct-field input:focus-visible, .ct-field select:focus-visible, .ct-field textarea:focus-visible, .ct-send:focus-visible, .ct-close:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  .ct-field [aria-invalid='true'] { border-color: #e5484d; }
+  .ct-trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .ct-status { min-height: 1.5em; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .ct-status.error { color: #ff8a8f; }
+  .ct-status.ok { color: var(--text); }
+  .ct-send { width: 100%; font: 600 16px 'Inter', system-ui, sans-serif; background: var(--amber); color: var(--on-amber); border: 0; border-radius: 6px; padding: 12px 18px; cursor: pointer; }
+  .ct-send:hover:not(:disabled) { filter: brightness(1.08); }
+  .ct-send:disabled { opacity: .6; cursor: default; }
+  .ct-done[hidden], .ct-form[hidden] { display: none; }
+  .ct-check { width: 64px; height: 64px; margin: 8px 0 16px; display: grid; place-items: center; border-radius: 50%; background: var(--amber); color: var(--on-amber); font-size: 34px; font-weight: 700; }
+  .ct-done-text { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+  .ct-done-sub { margin: 0 0 24px; color: var(--muted); }
+  .ct-done-actions { display: flex; }
+  .ct-done-close { width: auto; }
+  .ct-done h2:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .contact[open] { animation: ct-in .2s ease; }
+    @keyframes ct-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<script>
+  const dialog = document.getElementById('contact-dialog') as HTMLDialogElement | null;
+  if (dialog) {
+    const form = dialog.querySelector<HTMLFormElement>('form')!;
+    const done = dialog.querySelector<HTMLElement>('.ct-done')!;
+    const doneText = dialog.querySelector<HTMLElement>('.ct-done-text')!;
+    const doneTitle = dialog.querySelector<HTMLElement>('#contact-done-title')!;
+    const status = dialog.querySelector<HTMLElement>('.ct-status')!;
+    const send = dialog.querySelector<HTMLButtonElement>('.ct-send')!;
+    const endpoint = dialog.dataset.endpoint ?? '';
+    const email = dialog.dataset.email ?? '';
+
+    // After a message goes out, the form stays locked for a minute (reopening shows the confirmation
+    // instead). The time is remembered in the browser so reloading the page does not skip the wait.
+    const COOLDOWN_MS = 60_000;
+    const KEY = 'contact-last-sent';
+    const lastSent = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; } };
+    const remaining = () => Math.max(0, lastSent() + COOLDOWN_MS - Date.now());
+    let sending = false;
+
+    const setStatus = (msg: string, kind: '' | 'ok' | 'error' = '') => {
+      status.textContent = msg;
+      status.className = `ct-status ${kind}`.trim();
+    };
+
+    function showForm() {
+      done.hidden = true;
+      form.hidden = false;
+      setStatus('');
+    }
+
+    function showDone(firstTime: boolean, name = '') {
+      form.hidden = true;
+      done.hidden = false;
+      doneText.textContent = firstTime
+        ? `Thanks${name ? `, ${name}` : ''}! Your message was sent.`
+        : 'Your message was sent a moment ago.';
+      doneTitle.focus();
+    }
+
+    // Open from any [data-open-contact] element (falls back to its mailto: link if JS is off).
+    document.querySelectorAll<HTMLElement>('[data-open-contact]').forEach((el) =>
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        dialog.showModal();
+        if (remaining() > 0) { showDone(false); return; }
+        showForm();
+        dialog.querySelector<HTMLInputElement>('#ct-name')?.focus();
+      }),
+    );
+    dialog.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => dialog.close()));
+    // Click on the dimmed backdrop closes it.
+    dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (sending) return;
+      if (remaining() > 0) { showDone(false); return; }
+      const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+
+      // Simple validation with messages a person can act on.
+      const fields = Array.from(form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[name], select, textarea'))
+        .filter((f) => f.name !== 'company');
+      fields.forEach((f) => f.removeAttribute('aria-invalid'));
+      const bad = fields.find((f) => !f.checkValidity() || !f.value.trim());
+      if (bad) {
+        bad.setAttribute('aria-invalid', 'true');
+        bad.focus();
+        setStatus(bad.name === 'email' ? 'Please enter a valid email address.' : 'Please fill in every field.', 'error');
+        return;
+      }
+
+      // Spam trap: pretend it worked.
+      if (data.company) { form.reset(); showDone(true, data.name); return; }
+
+      if (!endpoint) {
+        // No email service connected: open the visitor's email app with the message filled in.
+        const subject = encodeURIComponent(`${data.reason}: message from ${data.name}`);
+        const body = encodeURIComponent(`${data.message}\n\n${data.name}\n${data.email}`);
+        window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        setStatus('Opening your email app to finish sending.', 'ok');
+        return;
+      }
+
+      sending = true;
+      send.disabled = true;
+      setStatus('Sending…');
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ name: data.name, email: data.email, reason: data.reason, message: data.message, _subject: `${data.reason}: message from ${data.name}` }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        try { localStorage.setItem(KEY, String(Date.now())); } catch {}
+        form.reset();
+        showDone(true, data.name);
+      } catch {
+        setStatus(`That did not go through. You can email me directly at ${email}.`, 'error');
+      } finally {
+        sending = false;
+        send.disabled = false;
+      }
+    });
+  }
+</script>
