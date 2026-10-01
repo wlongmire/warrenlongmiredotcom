@@ -1,9 +1,9 @@
 ---
-title: "Nick Virgilio Haiku Association: Tiny Truth Project"
-outcome: "A free, tramua-informed haiku curriculum, designed and illustrated end to end, now serving over 200 students in Camden, New Jersey schools."
+title: "Nick Virgilio Haiku Association: The Tiny Truth Project"
+outcome: "A trauma-informed, standards-aligned haiku curriculum that has reached over 200 Camden, NJ students, with a 45% increase in students using writing for emotional coping."
 role: "Curriculum Creator and Designer"
 org: "Nick Virgilio Haiku Association"
-dates: "2024–Present"
+dates: "2023–Present"
 tools: []
 tracks: [learning-design, teaching, design-ux]
 order: 3
@@ -25,20 +25,20 @@ artifacts:                     # files live in public/artifacts/
 
 ### Context
 
-The Nick Virgilio Haiku Association, a Camden nonprofit honoring one of the pioneers of English-language haiku, had taught short-form poetry workshops for years, including classes at the Salvation Army Kroc Center in 2023, but each session depended on whoever was teaching it. NVHA wanted a standardized curriculum it could bring into Camden public schools for free.
+The Nick Virgilio Haiku Association, a Camden nonprofit and home of the Virgilio Writers House, had taught haiku workshops for decades, but each session depended on whoever was teaching it. NVHA wanted a free, standardized program it could bring into Camden public schools, where many students in grades 6–8 arrive with little or no poetry experience.
 
 ### Approach
 
-I designed a six-week program around a single progression: students start by writing one strong poetic line and build toward fully developed haiku. Each session opens with a meditational icebreaker to encourage introspection, and the course places haiku in a history of short-form poetry across cultures so students see themselves in the tradition. The work was shaped with an English-education professor and reviewed by a licensed counselor to keep it healing-centered and trauma-informed.
+I designed "Haiku & You," a six-week, twelve-session course (two 45-minute sessions a week) built on a single progression: students start by crafting one vivid image and build toward a titled collection of their own poems. Every session opens with a 10-minute sensory icebreaker to encourage reflection. Each week has essential questions, measurable objectives, and a concrete writing target, and the course is mapped to New Jersey Student Learning Standards for grades 5–6. The work was shaped with an English-education professor and reviewed by a licensed counselor to keep it healing-centered and trauma-informed. This program was recently rebranded as The Tiny Truths Project.
 
 ### What I built
 
-- A six-week, Common Core–aligned short-form poetry curriculum for grades 5–8
-- Step-by-step lessons scaffolding students from single lines to complete haiku
-- Meditational icebreakers and a cross-cultural history of short-form poetry
-- Standardized lesson materials any NVHA teaching artist can deliver
-- The visual design of the curriculum
+- A 6-week curriculum: haiku → senryu → haiku series → rhyme and rhythm → performance → final collection
+- Session-by-session lesson plans with objectives, keywords, icebreakers, and lesson outlines
+- A 35-slide classroom deck for teaching artists to deliver the course consistently
+- Collaborated on pre- and post-program surveys to measure confidence, reflection, and emotional coping
+- Designed slides, prospectus and trifold explaining the curriculum process for clients and instructors
 
 ### Outcome
 
-Piloted with 6th graders at Dr. Henry H. Davis Elementary, then expanded to Cooper's Poynt Family School in April 2025 for National Poetry Month. The Tiny Truth Project now serves over 200 students across Camden schools.
+In spring 2025, the program served 51 students at Cooper's Poynt Family School and Davis Elementary. Anonymous surveys showed up to a 45% increase in students reporting high confidence, self-reflection, and emotional coping, and 84% said they felt joy in writing after the program. More than 200 students have taken part since 2023.

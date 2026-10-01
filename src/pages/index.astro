@@ -22,6 +22,7 @@ const roleLine = (d: (typeof workEntries)[number]['data']) =>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{site.name}</title>
+  <link rel="canonical" href={new URL('/', Astro.site).href} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -301,6 +302,8 @@ const roleLine = (d: (typeof workEntries)[number]['data']) =>
   .b .about-card { position: absolute; z-index: 2; left: 30%; right: 6%; bottom: 80px; padding: 36px 48px 40px; border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 20px 48px rgba(0,0,0,.25);
     /* See-through so the photo shows behind it; the blur keeps the text legible. */
     background: color-mix(in srgb, var(--card) 55%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  /* Dark theme only: pure white hero text (the light theme keeps its dark text). */
+  html[data-theme='dark'] .b .hero-full h1, html[data-theme='dark'] .b .about-card { color: #fff; }
   .b .about-card h2 { font: 600 28px/1.2 'Fraunces', Georgia, serif; margin: 0 0 12px; }
   .b .about-card p { margin: 0 0 1em; max-width: 38em; }
   .b .about-card p:last-child { margin-bottom: 0; }

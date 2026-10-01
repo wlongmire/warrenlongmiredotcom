@@ -6,6 +6,19 @@ import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
 
 const entries = (await getCollection('timeline')).sort((a, b) => a.data.order - b.data.order);
+
+// Pull the video id out of a YouTube link (youtu.be/ID, watch?v=ID, embed/ID or shorts/ID).
+function youtubeId(url: string): string | null {
+  const m = url.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+// One list per step: the new `media` list, or the older single `image`.
+const mediaFor = (d: any) =>
+  d.media.length > 0
+    ? d.media
+    : d.image
+      ? [{ type: 'image', src: d.image, alt: d.imageAlt ?? '', fit: 'cover' }]
+      : [];
 const steps = await Promise.all(
   entries.map(async (entry) => ({ entry, Content: (await render(entry)).Content })),
 );
@@ -20,8 +33,33 @@ const steps = await Promise.all(
       {steps.map(({ entry, Content }, i) => (
         <article class="tl-step" id={`step-${entry.id}`} role="tabpanel" aria-labelledby={`tab-${entry.id}`}>
           <div class="tl-media">
-            {entry.data.image ? (
-              <Image src={entry.data.image} alt={entry.data.imageAlt ?? ''} width={900} loading={i === 0 ? 'eager' : 'lazy'} />
+            {mediaFor(entry.data).length > 0 ? (
+              <div class="tl-slides" role="group" aria-roledescription="slideshow" aria-label={`${entry.data.title}: pictures and video`}>
+                {mediaFor(entry.data).map((m: any, k: number) => {
+                  const id = m.type === 'video' ? youtubeId(m.url) : null;
+                  return m.type === 'video' && id ? (
+                    <figure class="tl-slide tl-video" hidden={k > 0} data-video-id={id} data-title={m.title}>
+                      <button type="button" class="tl-play" aria-label={`Play video: ${m.title}`}>
+                        <img src={`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`} alt="" loading="lazy" />
+                        <span class="tl-play-icon" aria-hidden="true">▶</span>
+                      </button>
+                      {m.caption && <figcaption>{m.caption}</figcaption>}
+                    </figure>
+                  ) : m.type === 'image' ? (
+                    <figure class="tl-slide" hidden={k > 0}>
+                      <Image src={m.src} alt={m.alt} width={1000} loading={i === 0 ? 'eager' : 'lazy'} class={m.fit === 'contain' ? 'tl-contain' : undefined} />
+                      {m.caption && <figcaption>{m.caption}</figcaption>}
+                    </figure>
+                  ) : null;
+                })}
+                {mediaFor(entry.data).length > 1 && (
+                  <div class="tl-slide-controls">
+                    <button type="button" class="tl-sprev" aria-label="Previous picture or video">←</button>
+                    <span class="tl-scount" aria-live="polite"></span>
+                    <button type="button" class="tl-snext" aria-label="Next picture or video">→</button>
+                  </div>
+                )}
+              </div>
             ) : (
               <div class="tl-media-empty" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
             )}
@@ -78,8 +116,31 @@ const steps = await Promise.all(
   .timeline:not(.tl-js) .tl-controls { display: none; }
 
   .tl-media { align-self: stretch; min-height: 0; display: flex; }
-  .tl-media img, .tl-media-empty { width: 100%; height: 100%; max-height: 480px; align-self: center; object-fit: cover; border-radius: 16px; border: 1px solid var(--rule); display: block; }
-  .tl-media-empty { display: grid; place-items: center; background: linear-gradient(160deg, var(--rule), var(--card)); color: var(--muted); font: 600 72px 'Fraunces', Georgia, serif; }
+  .tl-media-empty { width: 100%; height: 100%; max-height: 480px; align-self: center; border-radius: 16px; border: 1px solid var(--rule); display: grid; place-items: center; background: linear-gradient(160deg, var(--rule), var(--card)); color: var(--muted); font: 600 72px 'Fraunces', Georgia, serif; }
+
+  /* Slideshow of images and videos: one at a time, arrows and a counter when there are several. */
+  .tl-slides { container-type: size; position: relative; width: 100%; height: 100%; max-height: 480px; align-self: center; border-radius: 16px; overflow: hidden; border: 1px solid var(--rule); background: #000; }
+  .tl-slide { position: absolute; inset: 0; margin: 0; }
+  .tl-slide[hidden] { display: none; }
+  .tl-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tl-slide img.tl-contain { object-fit: contain; }
+  .tl-slide figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 130px 12px 14px; font-size: 13px; color: #fff; background: linear-gradient(to top, rgba(5, 10, 20, .75), transparent); }
+  .tl-play { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: #000; cursor: pointer; }
+  .tl-play img { opacity: .85; transition: opacity .2s; }
+  .tl-play:hover img { opacity: 1; }
+  .tl-play-icon { position: absolute; left: 50%; top: 50%; width: 72px; height: 72px; margin: -36px 0 0 -36px; display: grid; place-items: center; padding-left: 5px; box-sizing: border-box; border-radius: 50%; background: var(--amber); color: var(--on-amber); font-size: 28px; transition: transform .2s; }
+  .tl-play:hover .tl-play-icon { transform: scale(1.08); }
+  .tl-play:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+  /* The player is as wide as the box (16:9, centred, so there is space above and below it). */
+  /* :global because the player is created by the script, so it has no scoped-style marker. */
+  .tl-video :global(iframe) { position: absolute; left: 0; top: 50%; transform: translateY(-50%); border: 0; width: 100cqw; height: 56.25cqw; }
+  .tl-video { background: #000; }
+  .tl-video .tl-play img { object-fit: contain; }
+  .tl-slide-controls { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: flex; align-items: center; gap: 6px; padding: 4px; border-radius: 999px; background: rgba(8, 14, 28, .78); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .tl-slide-controls button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent; color: #fff; font-size: 17px; cursor: pointer; }
+  .tl-slide-controls button:hover { color: var(--amber); }
+  .tl-slide-controls button:focus-visible { outline: 2px solid var(--amber); }
+  .tl-scount { min-width: 3.4em; text-align: center; color: #fff; font-size: 13px; }
 
   .tl-body { max-height: 100%; overflow-y: auto; padding-bottom: 64px; }
   .tl-period { margin: 0 0 6px; color: var(--amber); font-size: 18px; font-weight: 600; }
@@ -107,10 +168,11 @@ const steps = await Promise.all(
     .timeline { min-height: 0; padding-top: 56px; }
     .tl-stage { flex-direction: column; }
     .tl-step { grid-template-columns: 1fr; gap: 16px; align-content: start; }
-    .tl-media img, .tl-media-empty { max-height: 220px; }
+    .tl-slides, .tl-media-empty { height: 240px; max-height: none; }
     .tl-body { overflow: visible; padding-bottom: 0; }
     .tl-controls { position: static; margin-top: 20px; }
   }
+  @media (prefers-reduced-motion: reduce) { .tl-play img, .tl-play-icon { transition: none; } }
   @media (prefers-reduced-motion: no-preference) {
     .tl-step:not([hidden]) { animation: tl-in .35s ease; }
     @keyframes tl-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -129,8 +191,71 @@ const steps = await Promise.all(
     root.classList.add('tl-js');
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    function show(i: number, focusTab = false) {
+
+    // Videos start as a thumbnail with a play button; the YouTube player is only created on click.
+    root.querySelectorAll<HTMLElement>('.tl-video').forEach((v) => {
+      (v as any)._btn = v.querySelector('.tl-play')!.cloneNode(true);
+    });
+    function stopVideos(scope: ParentNode = root) {
+      scope.querySelectorAll<HTMLElement>('.tl-video').forEach((v) => {
+        const frame = v.querySelector('iframe');
+        if (frame) frame.replaceWith((v as any)._btn.cloneNode(true));
+      });
+    }
+    function play(v: HTMLElement) {
+      const btn = v.querySelector('.tl-play');
+      if (!btn) return; // already playing
+      const frame = document.createElement('iframe');
+      frame.src = `https://www.youtube-nocookie.com/embed/${v.dataset.videoId}?autoplay=1&mute=1&rel=0&playsinline=1`;
+      frame.title = v.dataset.title ?? 'Embedded video';
+      frame.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      btn.replaceWith(frame);
+    }
+    root.addEventListener('click', (e) => {
+      const v = (e.target as HTMLElement).closest<HTMLElement>('.tl-play')?.closest<HTMLElement>('.tl-video');
+      if (v) play(v);
+    });
+    // A video that someone navigates to (arrows, keys or the Moment buttons) starts by itself.
+    // Not on page load: browsers block that, and nobody asked for it yet.
+    function autoplayVisible(scope: ParentNode) {
+      const v = scope.querySelector<HTMLElement>('.tl-slide:not([hidden]).tl-video');
+      if (v) play(v);
+    }
+    // YouTube answers with a tiny grey picture when the full-size thumbnail does not exist; use a smaller one then.
+    root.querySelectorAll<HTMLImageElement>('.tl-play img').forEach((img) => {
+      const fix = () => {
+        if (img.naturalWidth > 0 && img.naturalWidth <= 120) img.src = img.src.replace('maxresdefault', 'mqdefault');
+      };
+      img.complete ? fix() : img.addEventListener('load', fix, { once: true });
+    });
+
+    // Slideshows: arrows and a counter when a step has more than one picture or video.
+    root.querySelectorAll<HTMLElement>('.tl-slides').forEach((ss) => {
+      const slides = Array.from(ss.querySelectorAll<HTMLElement>('.tl-slide'));
+      const count = ss.querySelector<HTMLElement>('.tl-scount');
+      const prev = ss.querySelector<HTMLButtonElement>('.tl-sprev');
+      const next = ss.querySelector<HTMLButtonElement>('.tl-snext');
+      if (slides.length < 2 || !count || !prev || !next) return;
+      let n = 0;
+      const go = (to: number, auto = true) => {
+        stopVideos(ss);
+        n = (to + slides.length) % slides.length;
+        slides.forEach((s, k) => { s.hidden = k !== n; });
+        count.textContent = `${n + 1} / ${slides.length}`;
+        if (auto) autoplayVisible(ss);
+      };
+      prev.addEventListener('click', () => go(n - 1));
+      next.addEventListener('click', () => go(n + 1));
+      ss.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); go(n - 1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(n + 1); }
+      });
+      go(0, false);
+    });
+    function show(i: number, focusTab = false, auto = false) {
       i = Math.max(0, Math.min(tabs.length - 1, i));
+      stopVideos(); // leaving a step stops any video that is playing
       tabs.forEach((t, n) => {
         t.setAttribute('aria-selected', String(n === i));
         t.tabIndex = n === i ? 0 : -1;
@@ -145,18 +270,19 @@ const steps = await Promise.all(
       nav.scrollTo({ left: Math.max(0, target), behavior: reduceMotion.matches ? 'auto' : 'smooth' });
       if (focusTab) tabs[i].focus({ preventScroll: true });
       current = i;
+      if (auto) autoplayVisible(panels[i]);
     }
     let current = 0;
 
-    tabs.forEach((t, n) => t.addEventListener('click', () => show(n)));
-    prev.addEventListener('click', () => show(current - 1));
-    next.addEventListener('click', () => show(current + 1));
+    tabs.forEach((t, n) => t.addEventListener('click', () => show(n, false, true)));
+    prev.addEventListener('click', () => show(current - 1, false, true));
+    next.addEventListener('click', () => show(current + 1, false, true));
     root.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
       const k = (e as KeyboardEvent).key;
-      if (k === 'ArrowRight') { e.preventDefault(); show(current + 1, true); }
-      else if (k === 'ArrowLeft') { e.preventDefault(); show(current - 1, true); }
-      else if (k === 'Home') { e.preventDefault(); show(0, true); }
-      else if (k === 'End') { e.preventDefault(); show(tabs.length - 1, true); }
+      if (k === 'ArrowRight') { e.preventDefault(); show(current + 1, true, true); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); show(current - 1, true, true); }
+      else if (k === 'Home') { e.preventDefault(); show(0, true, true); }
+      else if (k === 'End') { e.preventDefault(); show(tabs.length - 1, true, true); }
     });
 
     // Deep link like /#step-01-placeholder opens that step.

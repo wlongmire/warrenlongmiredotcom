@@ -50,7 +50,25 @@ const timeline = defineCollection({
     order: z.number(),
     skills: z.array(z.string()).default([]),
     link: z.object({ label: z.string(), url: z.string() }).optional(), // shown only once url is filled in
-    image: image().optional(),        // optional; put files in src/assets/timeline/
+    // The step's picture area is a slideshow of images and/or YouTube videos, in this order.
+    // Put image files in src/assets/timeline/. With one item there are no arrows; with several there are.
+    media: z.array(z.discriminatedUnion('type', [
+      z.object({
+        type: z.literal('image'),
+        src: image(),
+        alt: z.string(),
+        caption: z.string().optional(),
+        fit: z.enum(['contain', 'cover']).default('cover'), // 'contain' shows the whole picture
+      }),
+      z.object({
+        type: z.literal('video'),
+        url: z.string(),                                     // a YouTube link (youtu.be/... or youtube.com/watch?v=...)
+        title: z.string().default('Embedded video'),         // read aloud by screen readers
+        caption: z.string().optional(),
+      }),
+    ])).default([]),
+    // Older single-image form, still accepted:
+    image: image().optional(),
     imageAlt: z.string().optional(),
   }),
 });
