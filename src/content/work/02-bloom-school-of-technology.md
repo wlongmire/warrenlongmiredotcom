@@ -19,7 +19,7 @@ images:                      # one image = single view, several = gallery
     alt: "bloomtech logo"
     fit: cover             # or cover, to crop to a wide banner
 # artifacts:                   # samples and files, e.g. url: "/artifacts/example.pdf" (put files in public/artifacts/)
-#   - label: "TODO: name of the artifact"
+#   - label: "name of the artifact"
 #     url: ""
 ---
 
