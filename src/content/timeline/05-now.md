@@ -3,7 +3,7 @@ label: "Now"
 period: "2022 – Present"
 title: "Designing the learning itself"
 order: 5
-skills: ["TypeScript / Next.js", "OpenAI API", "Prompt engineering", "Claude Code", "Backward design"]
+skills: ["ADDIE development", "Bloom's Taxonomy", "Assessment design", "Backward design", "TypeScript / Next.js", "Prompt engineering"]
 media:                         # the picture area is a slideshow, in this order
   - type: image
     src: "../../assets/timeline/05_Galvanize-slide.png"
