@@ -32,6 +32,13 @@ draft: false
 ```
 Body sections, in order: Context, Approach, What I built, Outcome, Reflection.
 
+## Editing from the web
+`/edit` (password-protected, content only) saves Markdown/uploads to GitHub, which redeploys the site. It runs as a few
+on-demand routes via `@astrojs/vercel`; every public page stays static. Code is in `src/lib/editor/` and
+`src/pages/edit/`, `src/pages/api/edit/`. Setup and safety rules: `EDITING.md`. Site-wide details live in
+`src/data/site.json` (read by `site.ts`). Keep new content fields editable: if you add a field to a content collection,
+also add it to the checks in `src/lib/editor/rules.ts`.
+
 ## Rules
 - Keep content editable by a non-developer: never hard-code case study text in components.
 - Never invent facts about Warren's work. If a detail is missing, leave a `TODO:` in the Markdown and ask.

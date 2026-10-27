@@ -1,0 +1,388 @@
+---
+// The /edit page: a password-protected place to change the site's CONTENT (text, pictures, files).
+// It cannot change layouts or code. Saves become commits on GitHub, which redeploy the site.
+import { isAuthed, passwordConfigured } from '../../lib/editor/auth';
+import { storageMode } from '../../lib/editor/storage';
+
+export const prerender = false;
+
+const authed = isAuthed(Astro.request);
+const setupNeeded = !passwordConfigured();
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Edit the site</title>
+  <style is:global>
+    :root { --bg: #f6f4ef; --card: #fff; --ink: #1d2433; --muted: #566074; --line: #d9d4c7; --accent: #1f5fbf; --accent-ink: #fff; --bad: #b3261e; --ok: #1b6b3a; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    .btn:disabled { opacity: .55; cursor: default; }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+    .btn.small { padding: 5px 10px; font-size: 14px; }
+    input[type='text'], input[type='email'], input[type='password'], input[type='url'], select, textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.5; resize: vertical; }
+    label { display: block; font-weight: 600; margin: 0 0 4px; }
+    .hint { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+    .status { min-height: 1.5em; font-weight: 600; }
+    .status.error { color: var(--bad); }
+    .status.ok { color: var(--ok); }
+    .problems { margin: 6px 0 0; padding-left: 20px; color: var(--bad); font-weight: 400; }
+
+    .login { max-width: 380px; margin: 12vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px; }
+    .login .field { margin: 16px 0; }
+
+    .top { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+    .top h1 { font-size: 20px; margin: 0; margin-right: auto; }
+    .mode { font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+    .layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; padding: 20px; max-width: 1280px; margin: 0 auto; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+    .side { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; align-self: start; }
+    .side h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+    .side h2:first-child { margin-top: 0; }
+    .side ul { list-style: none; margin: 0; padding: 0; }
+    .side li button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 7px 8px; cursor: pointer; }
+    .side li button:hover { background: var(--bg); }
+    .side li button[aria-current='true'] { background: #e3ecfb; font-weight: 600; }
+    .newbtn { margin: 6px 0 0 8px; }
+    .main { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-height: 360px; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .row.between { justify-content: space-between; }
+    .path { font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+    .field { margin: 0 0 16px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
+    .preview { border: 1.5px dashed var(--line); border-radius: 6px; padding: 12px 14px; background: #fcfbf8; }
+    .preview h3 { font-size: 17px; margin: 14px 0 6px; }
+    .preview p, .preview ul { margin: 0 0 10px; }
+    .help { background: #f1f5fc; border: 1px solid #cfdcf3; border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }
+    .help summary { cursor: pointer; font-weight: 600; }
+    .help code { background: #fff; padding: 0 4px; border-radius: 4px; }
+    .linkrow { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; margin: 0 0 8px; }
+    .result { background: #edf7f0; border: 1px solid #b9dcc4; border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
+    .result code { background: #fff; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  {setupNeeded ? (
+    <main class="login">
+      <h1>Editing isn't set up yet</h1>
+      <p>Add a password in the site's settings so this page can be protected: a variable named <code>EDIT_PASSWORD</code>. Then reload this page.</p>
+    </main>
+  ) : !authed ? (
+    <main class="login">
+      <h1>Edit the site</h1>
+      <p class="hint">Enter the editing password to continue.</p>
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label for="pw">Password</label>
+          <input id="pw" type="password" autocomplete="current-password" required />
+        </div>
+        <button class="btn" type="submit">Sign in</button>
+        <p id="login-status" class="status" role="alert"></p>
+      </form>
+    </main>
+  ) : (
+    <div id="app" data-mode={storageMode()}>
+      <header class="top">
+        <h1>Edit the site</h1>
+        <span class="mode" id="mode"></span>
+        <a class="btn ghost small" href="/" target="_blank" rel="noopener">View site</a>
+        <button class="btn ghost small" id="logout" type="button">Sign out</button>
+      </header>
+      <div class="layout">
+        <nav class="side" aria-label="Things you can edit" id="side">Loading…</nav>
+        <main class="main" id="main" tabindex="-1">
+          <p>Choose something to edit from the list.</p>
+          <p class="hint">Your changes go live on the site about a minute after you press Save.</p>
+        </main>
+      </div>
+    </div>
+  )}
+
+  <script is:inline>
+    (function () {
+      var $ = function (s, r) { return (r || document).querySelector(s); };
+      var HEAD = { 'x-edit': '1' };
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+
+      function api(url, opts) {
+        opts = opts || {};
+        opts.headers = Object.assign({}, HEAD, opts.headers || {});
+        return fetch(url, opts).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
+        });
+      }
+
+      /* ---------- Login ---------- */
+      var lf = $('#login-form');
+      if (lf) {
+        lf.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var st = $('#login-status'); st.className = 'status'; st.textContent = 'Checking…';
+          api('/api/edit/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) })
+            .then(function (r) {
+              if (r.ok) location.reload();
+              else { st.className = 'status error'; st.textContent = r.data.error || 'Could not sign in.'; }
+            });
+        });
+        return;
+      }
+      var app = $('#app');
+      if (!app) return;
+
+      /* ---------- Editor ---------- */
+      var side = $('#side'), main = $('#main');
+      var files = null, current = null, dirty = false, mode = app.dataset.mode;
+      $('#mode').textContent = mode === 'GitHub' ? 'Saving to the live site' : 'Test mode: saving to local files';
+
+      $('#logout').addEventListener('click', function () {
+        api('/api/edit/logout', { method: 'POST' }).then(function () { location.reload(); });
+      });
+      window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+      function setStatus(el, msg, kind, problems) {
+        el.className = 'status' + (kind ? ' ' + kind : '');
+        el.textContent = msg;
+        if (problems && problems.length) {
+          var ul = document.createElement('ul'); ul.className = 'problems';
+          problems.forEach(function (p) { var li = document.createElement('li'); li.textContent = p; ul.appendChild(li); });
+          el.appendChild(ul);
+        }
+      }
+      function confirmLeave() { return !dirty || confirm('You have changes that are not saved. Leave without saving?'); }
+
+      function loadList() {
+        return api('/api/edit/files').then(function (r) {
+          if (r.status === 401) { location.reload(); return; }
+          if (!r.ok) { side.textContent = r.data.error || 'Could not load the list.'; return; }
+          files = r.data; renderSide();
+        });
+      }
+
+      function group(title, items, kind) {
+        var h = '<h2>' + esc(title) + '</h2><ul>';
+        items.forEach(function (f) {
+          h += '<li><button type="button" data-open="' + esc(f.path) + '" data-kind="' + kind + '"' + (current && current.path === f.path ? ' aria-current="true"' : '') + '>' + esc(f.label) + '</button></li>';
+        });
+        return h + '</ul>';
+      }
+      function renderSide() {
+        var h = '';
+        h += group('Case studies', files.work, 'work');
+        h += '<button class="btn ghost small newbtn" type="button" data-new="work">+ New case study</button>';
+        h += group('My Journey steps', files.timeline, 'timeline');
+        h += '<button class="btn ghost small newbtn" type="button" data-new="timeline">+ New step</button>';
+        h += '<h2>Page text</h2><ul>';
+        h += '<li><button type="button" data-open="' + esc(files.about.path) + '" data-kind="about"' + (current && current.path === files.about.path ? ' aria-current="true"' : '') + '>' + esc(files.about.label) + '</button></li>';
+        h += '<li><button type="button" data-open="' + esc(files.site.path) + '" data-kind="site"' + (current && current.path === files.site.path ? ' aria-current="true"' : '') + '>' + esc(files.site.label) + '</button></li></ul>';
+        h += '<h2>Pictures &amp; files</h2><ul><li><button type="button" data-uploads="1"' + (current && current.path === 'uploads' ? ' aria-current="true"' : '') + '>Upload pictures, files, resumes</button></li></ul>';
+        side.innerHTML = h;
+      }
+      side.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        if (!confirmLeave()) return;
+        if (b.dataset.open) openFile(b.dataset.open, b.dataset.kind);
+        else if (b.dataset.uploads) openUploads();
+        else if (b.dataset.new) newFile(b.dataset.new);
+      });
+
+      /* ---------- Markdown files ---------- */
+      var HELP = {
+        work: '<p><b>Details</b> (the top box) are named lines such as <code>title:</code>, <code>outcome:</code> (the one-line summary on the card), <code>role:</code>, <code>org:</code>, <code>dates:</code>, <code>tracks:</code> (learning-design, teaching, engineering, design-ux) and <code>order:</code> (1 shows first). Set <code>draft: true</code> to hide a case study without deleting it.</p><p>To show pictures, files or links in the popup, add <code>images:</code>, <code>artifacts:</code> or <code>links:</code> lists. Upload the picture first, then paste the path it gives you.</p><p><b>Text</b> (the bottom box) is the deeper description. Use <code>### Context</code> for a heading, <code>- </code> for bullet points and <code>**bold**</code>.</p>',
+        timeline: '<p><b>Details</b> are <code>label:</code> (the short tag, like Design), <code>period:</code> (the dates), <code>title:</code>, <code>order:</code> (1 = earliest), <code>skills:</code> (the small pills) and an optional <code>media:</code> list for pictures and YouTube videos. Upload a picture first, then paste the path it gives you.</p><p><b>Text</b> is the paragraph shown beside the pictures.</p>',
+        about: '<p><b>Details</b> hold the <code>headshot:</code> picture and its <code>headshotAlt:</code> description. <b>Text</b> is the paragraph in the About box on the home page.</p>'
+      };
+
+      function splitFM(text) {
+        var m = text.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+        return m ? { fm: m[1], body: m[2].replace(/^\n+/, '') } : { fm: '', body: text };
+      }
+      function inline(s) {
+        return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\[(.+?)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      }
+      function md(src) {
+        var out = '', list = false;
+        src.replace(/\r\n/g, '\n').split(/\n/).forEach(function (line) {
+          var li = line.match(/^\s*[-*]\s+(.*)$/);
+          if (li) { if (!list) { out += '<ul>'; list = true; } out += '<li>' + inline(li[1]) + '</li>'; return; }
+          if (list) { out += '</ul>'; list = false; }
+          var h = line.match(/^#{1,6}\s+(.*)$/);
+          if (h) out += '<h3>' + inline(h[1]) + '</h3>';
+          else if (line.trim()) out += '<p>' + inline(line) + '</p>';
+        });
+        return out + (list ? '</ul>' : '');
+      }
+
+      function openFile(path, kind) {
+        main.innerHTML = 'Loading…';
+        api('/api/edit/file?path=' + encodeURIComponent(path)).then(function (r) {
+          if (r.status === 401) { location.reload(); return; }
+          if (!r.ok) { main.textContent = r.data.error || 'Could not open that file.'; return; }
+          current = { path: path, kind: r.data.kind, sha: r.data.sha };
+          dirty = false; renderSide();
+          if (r.data.kind === 'site') renderSite(r.data.text); else renderMd(r.data.text);
+          main.focus();
+        });
+      }
+
+      function renderMd(text) {
+        var p = splitFM(text);
+        main.innerHTML =
+          '<div class="row between"><div><h2 id="fname"></h2><div class="path"></div></div><button class="btn" id="save" type="button">Save</button></div>' +
+          '<p id="msg" class="status" role="status" aria-live="polite"></p>' +
+          '<details class="help"><summary>How to edit this</summary>' + (HELP[current.kind] || '') + '</details>' +
+          '<div class="field"><label for="fm">Details</label><textarea id="fm" rows="11" spellcheck="false"></textarea><p class="hint">Keep the format of each line (name, colon, value). Quotes around text are fine.</p></div>' +
+          '<div class="split"><div class="field"><label for="body">Text</label><textarea id="body" rows="18"></textarea></div>' +
+          '<div class="field"><label>Preview of the text</label><div class="preview" id="prev"></div></div></div>';
+        $('#fname').textContent = (/^title:\s*"?(.*?)"?\s*$/m.exec(p.fm) || [])[1] || current.path;
+        $('.path', main).textContent = current.path;
+        $('#fm').value = p.fm; $('#body').value = p.body; $('#prev').innerHTML = md(p.body);
+        $('#body').addEventListener('input', function () { $('#prev').innerHTML = md($('#body').value); dirty = true; });
+        $('#fm').addEventListener('input', function () { dirty = true; });
+        $('#save').addEventListener('click', saveMd);
+      }
+
+      function saveMd() {
+        var msg = $('#msg'), btn = $('#save');
+        var text = '---\n' + $('#fm').value.replace(/\s+$/, '') + '\n---\n\n' + $('#body').value.replace(/\s+$/, '') + '\n';
+        btn.disabled = true; setStatus(msg, 'Saving…');
+        api('/api/edit/file', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: current.path, text: text, sha: current.sha }) })
+          .then(function (r) {
+            btn.disabled = false;
+            if (r.status === 401) { location.reload(); return; }
+            if (r.ok) { current.sha = r.data.sha; dirty = false; setStatus(msg, mode === 'GitHub' ? 'Saved. The live site updates in about a minute.' : 'Saved to the local files.', 'ok'); }
+            else setStatus(msg, r.data.error || 'Could not save.', 'error', r.data.problems);
+          });
+      }
+
+      /* ---------- New files ---------- */
+      function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60); }
+      function newFile(kind) {
+        var title = prompt(kind === 'work' ? 'Name of the new case study:' : 'Title of the new journey step:');
+        if (!title || !slug(title)) return;
+        var list = files[kind], n = list.length + 1;
+        var name = ('0' + n).slice(-2) + '-' + slug(title);
+        var path = 'src/content/' + kind + '/' + name + '.md';
+        var t = title.replace(/"/g, "'");
+        var text = kind === 'work'
+          ? '---\ntitle: "' + t + '"\noutcome: "One line that sums up the project."\nrole: "Your role"\norg: "Organization"\ndates: "2024"\ntools: []\ntracks: [learning-design]\norder: ' + n + '\ndraft: true\n---\n\n### Context\n\nWrite the description here.\n'
+          : '---\nlabel: "Tag"\nperiod: "2024 – Present"\ntitle: "' + t + '"\norder: ' + n + '\nskills: ["Skill one", "Skill two"]\n---\n\nWrite a few sentences about this stretch of your career.\n';
+        api('/api/edit/file', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: path, text: text }) }).then(function (r) {
+          if (r.ok) { loadList().then(function () { openFile(path, kind); }); }
+          else alert((r.data.error || 'Could not create it.') + ((r.data.problems || []).length ? '\n- ' + r.data.problems.join('\n- ') : ''));
+        });
+      }
+
+      /* ---------- Site details form ---------- */
+      function renderSite(text) {
+        var d; try { d = JSON.parse(text); } catch (e) { main.textContent = 'Could not read the site details.'; return; }
+        var h = '<div class="row between"><div><h2>Site details</h2><div class="path">' + esc(current.path) + '</div></div><button class="btn" id="save" type="button">Save</button></div>' +
+          '<p id="msg" class="status" role="status" aria-live="polite"></p>' +
+          '<div class="field"><label for="s-name">Your name</label><input id="s-name" type="text" /></div>' +
+          '<div class="field"><label for="s-email">Contact email</label><input id="s-email" type="email" /><p class="hint">Shown in the footer and used by the Contact button.</p></div>' +
+          '<div class="field"><label>Links in the footer</label><div id="s-links"></div><button class="btn ghost small" id="add-link" type="button">+ Add a link</button><p class="hint">Leave the address empty to hide a link.</p></div>' +
+          '<div class="field"><label for="s-reasons">Contact form reasons</label><textarea id="s-reasons" rows="8" style="font-family:inherit"></textarea><p class="hint">One per line, up to 12. These fill the dropdown in the contact form.</p></div>';
+        main.innerHTML = h;
+        $('#s-name').value = d.name || ''; $('#s-email').value = d.email || '';
+        $('#s-reasons').value = (d.contactReasons || []).join('\n');
+        var box = $('#s-links');
+        function addLink(l) {
+          var row = document.createElement('div'); row.className = 'linkrow';
+          row.innerHTML = '<input type="text" aria-label="Link name" placeholder="Name, e.g. LinkedIn" /><input type="url" aria-label="Link address" placeholder="https://…" /><button class="btn ghost small" type="button" aria-label="Remove this link">Remove</button>';
+          $('input:nth-child(1)', row).value = l.label || ''; $('input:nth-child(2)', row).value = l.url || '';
+          $('button', row).addEventListener('click', function () { row.remove(); dirty = true; });
+          box.appendChild(row);
+        }
+        (d.links || []).forEach(addLink);
+        $('#add-link').addEventListener('click', function () { addLink({}); dirty = true; });
+        main.addEventListener('input', function () { dirty = true; });
+        $('#save').addEventListener('click', function () {
+          var msg = $('#msg'), btn = $('#save');
+          var links = Array.prototype.map.call(box.children, function (row) {
+            return { label: $('input:nth-child(1)', row).value.trim(), url: $('input:nth-child(2)', row).value.trim() };
+          }).filter(function (l) { return l.label; });
+          var payload = { name: $('#s-name').value.trim(), email: $('#s-email').value.trim(), links: links,
+            contactReasons: $('#s-reasons').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) };
+          btn.disabled = true; setStatus(msg, 'Saving…');
+          api('/api/edit/file', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: current.path, text: JSON.stringify(payload), sha: current.sha }) }).then(function (r) {
+            btn.disabled = false;
+            if (r.status === 401) { location.reload(); return; }
+            if (r.ok) { current.sha = r.data.sha; dirty = false; setStatus(msg, mode === 'GitHub' ? 'Saved. The live site updates in about a minute.' : 'Saved to the local files.', 'ok'); }
+            else setStatus(msg, r.data.error || 'Could not save.', 'error', r.data.problems);
+          });
+        });
+      }
+
+      /* ---------- Uploads ---------- */
+      function openUploads() {
+        current = { path: 'uploads' }; dirty = false; renderSide();
+        var resumes = files.resumes.map(function (r) { return '<option value="' + esc(r.id) + '">' + esc(r.title) + '</option>'; }).join('');
+        main.innerHTML = '<h2>Upload pictures, files and resumes</h2>' +
+          '<p class="hint">Pictures are shrunk to a web-friendly size automatically. Files can be up to 4 MB.</p>' +
+          '<form id="up" novalidate><div class="field"><label for="u-target">What are you uploading?</label><select id="u-target">' +
+          '<option value="work-image">A picture for a case study</option><option value="timeline-image">A picture for My Journey</option>' +
+          '<option value="headshot">My headshot photo (replaces the current one)</option><option value="artifact">A file to link from a case study (PDF, Word, PowerPoint…)</option>' +
+          '<option value="resume">A resume PDF (replaces that resume)</option></select></div>' +
+          '<div class="field" id="u-resume-wrap" hidden><label for="u-resume">Which resume?</label><select id="u-resume">' + resumes + '</select></div>' +
+          '<div class="field"><label for="u-file">Choose the file</label><input id="u-file" type="file" /></div>' +
+          '<button class="btn" type="submit">Upload</button><p id="u-msg" class="status" role="status" aria-live="polite"></p><div id="u-result"></div></form>';
+        $('#u-target').addEventListener('change', function () { $('#u-resume-wrap').hidden = $('#u-target').value !== 'resume'; });
+        $('#up').addEventListener('submit', doUpload);
+      }
+
+      // Shrinks big photos in the browser so they upload quickly (and fixes sideways phone photos).
+      function prepare(file, target) {
+        var isImg = /^image\/(jpeg|png|webp)$/.test(file.type);
+        if (!isImg || !/image|headshot/.test(target)) return Promise.resolve(file);
+        return createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) {
+          var max = 2000, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+          if (s === 1 && file.size < 1500000 && target !== 'headshot') return file;
+          var c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+          c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+          var type = target === 'headshot' || file.type === 'image/jpeg' ? 'image/jpeg' : file.type;
+          return new Promise(function (res) {
+            c.toBlob(function (b) {
+              var ext = type === 'image/jpeg' ? 'jpg' : type === 'image/png' ? 'png' : 'webp';
+              res(new File([b], file.name.replace(/\.[^.]+$/, '') + '.' + ext, { type: type }));
+            }, type, 0.86);
+          });
+        }).catch(function () { return file; });
+      }
+
+      function doUpload(e) {
+        e.preventDefault();
+        var msg = $('#u-msg'), out = $('#u-result'), f = $('#u-file').files[0], target = $('#u-target').value;
+        out.innerHTML = '';
+        if (!f) { setStatus(msg, 'Choose a file first.', 'error'); return; }
+        setStatus(msg, 'Uploading…');
+        prepare(f, target).then(function (file) {
+          var fd = new FormData(); fd.append('file', file); fd.append('target', target); fd.append('resumeId', $('#u-resume').value);
+          return api('/api/edit/upload', { method: 'POST', body: fd });
+        }).then(function (r) {
+          if (r.status === 401) { location.reload(); return; }
+          if (!r.ok) { setStatus(msg, r.data.error || 'Upload failed.', 'error'); return; }
+          setStatus(msg, (r.data.replaced ? 'Replaced. ' : 'Uploaded. ') + (mode === 'GitHub' ? 'It appears on the live site in about a minute.' : ''), 'ok');
+          var ref = r.data.reference;
+          var use = target === 'work-image' || target === 'timeline-image' ? 'Paste this as the <code>src:</code> of a picture in the Details box of the case study or step.'
+            : target === 'artifact' ? 'Paste this as the <code>url:</code> of an artifact in the Details box of a case study.'
+            : target === 'headshot' ? 'Your headshot is replaced. Nothing else to do.' : 'That resume is replaced. Nothing else to do.';
+          out.innerHTML = '<div class="result"><p>' + use + '</p><p><code id="ref">' + esc(ref) + '</code> <button class="btn ghost small" id="copy" type="button">Copy</button></p></div>';
+          $('#copy').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(ref); $('#copy').textContent = 'Copied'; });
+        });
+      }
+
+      loadList();
+    })();
+  </script>
+</body>
+</html>

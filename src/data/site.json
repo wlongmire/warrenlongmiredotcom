@@ -1,0 +1,24 @@
+{
+  "name": "Warren C. Longmire",
+  "email": "warrenlongmire@gmail.com",
+  "links": [
+    {
+      "label": "LinkedIn",
+      "url": ""
+    },
+    {
+      "label": "GitHub",
+      "url": ""
+    }
+  ],
+  "contactEndpoint": "https://formspree.io/f/xjykljyb",
+  "contactReasons": [
+    "Hiring opportunity",
+    "Instructional design or L&D project",
+    "Technical Teaching or workshop",
+    "Engineering or software project",
+    "Design or UX project",
+    "Speaking or collaboration",
+    "Just saying hello"
+  ]
+}
