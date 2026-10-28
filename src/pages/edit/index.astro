@@ -104,6 +104,33 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     .pic .picx:hover { background: var(--bad); border-color: var(--bad); color: #0b1426; }
     #pic-msg { margin-top: 12px; }
     #pic-msg .btn { margin-left: 8px; }
+    .pics.mediabox { display: block; }
+    .mprev { background: #000; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .mprev .picbtn { display: block; width: 100%; padding: 0; border: 0; background: #000; cursor: zoom-in; }
+    #mtop { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 4px 16px; align-items: start; }
+    @media (max-width: 640px) { #mtop { grid-template-columns: 1fr; } }
+    .mprev img { display: block; width: 100%; height: 150px; object-fit: contain; background: #000; }
+    .mvideo { position: relative; aspect-ratio: 16 / 9; width: 100%; background: #000; }
+    .mvideo iframe, .mvideo .mplay { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .mvideo .mplay { padding: 0; background: #000; cursor: pointer; }
+    .mvideo .mplay img { height: 100%; opacity: .85; object-fit: cover; }
+    .mvideo .mplay span { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; display: grid; place-items: center; padding-left: 5px; box-sizing: border-box; border-radius: 50%; background: var(--accent); color: #0b1426; font-size: 16px; }
+    .mfields { margin: 0 0 4px; }
+    .mfields label:first-child { margin-top: 0; }
+    .mhint { margin: 10px 0 6px; color: var(--muted); font-size: 14px; }
+    .mlist { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+    .mitem { display: grid; grid-template-columns: 30px 1fr 30px; align-items: stretch; font-size: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .mitem.sel { border-color: var(--accent); }
+    .mitem.dragging { position: relative; z-index: 3; background: var(--raised); box-shadow: 0 8px 22px rgba(0,0,0,.5); }
+    .mitem button { border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; }
+    .mitem .mgrip { cursor: grab; touch-action: none; font-size: 18px; }
+    .mitem.dragging .mgrip { cursor: grabbing; color: var(--accent); }
+    .mitem .mpick { display: flex; align-items: center; gap: 10px; text-align: left; padding: 4px 8px 4px 0; color: var(--text); min-width: 0; }
+    .mitem .mpick img { width: 48px; height: 30px; object-fit: cover; background: #000; border-radius: 4px; flex: none; }
+    .mitem .mname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mitem .mname b { color: var(--accent); font-weight: 600; margin-right: 6px; }
+    .mitem .mx { font-size: 20px; }
+    .mitem .mx:hover { background: var(--bad); color: #0b1426; }
     .pic .vidlink { display: block; width: 100%; background: #000; }
     .pic .picbtn { display: block; width: 100%; padding: 0; border: 0; background: #000; cursor: zoom-in; }
     .pic img { display: block; width: 100%; height: 190px; object-fit: contain; background: #000; }
@@ -199,7 +226,13 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       $('#logout').addEventListener('click', function () {
         api('/api/edit/logout', { method: 'POST' }).then(function () { location.reload(); });
       });
-      window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+      /* Unsaved edits are kept in this browser tab, so a page reload (the local dev server reloads the page when a new
+         picture file appears) does not lose them. */
+      function readDraft() { try { return JSON.parse(sessionStorage.getItem('edit-draft') || 'null'); } catch (e) { return null; } }
+      function keepDraft(text) { try { sessionStorage.setItem('edit-draft', JSON.stringify({ path: current.path, sha: current.sha, text: text })); } catch (e) {} }
+      function clearDraft() { try { sessionStorage.removeItem('edit-draft'); } catch (e) {} }
+      var localHost = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+      window.addEventListener('beforeunload', function (e) { if (dirty && !localHost) { e.preventDefault(); e.returnValue = ''; } });
 
       function setStatus(el, msg, kind, problems) {
         el.className = 'status' + (kind ? ' ' + kind : '');
@@ -217,7 +250,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           if (r.status === 401) { location.reload(); return; }
           if (!r.ok) { side.textContent = r.data.error || 'Could not load the list.'; return; }
           files = r.data; renderSide();
-          if (!current) openFile(files.about.path); // start on the home page intro
+          if (!current) openFile((readDraft() || {}).path || files.about.path); // start on the home page intro (or where an unsaved edit was)
         });
       }
 
@@ -500,10 +533,161 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       function addVideo() {
         var url = $('#av-url').value.trim(), msg = $('#pic-msg');
         if (!youtubeId(url)) { setStatus(msg, 'Paste a YouTube link (like https://youtu.be/XXXXXXXXXXX).', 'error'); $('#av-url').focus(); return; }
-        var doc = $('#doc'); doc.value = insertVideo(doc.value, url);
+        var doc = $('#doc'); mediaSel = 1e6; doc.value = insertVideo(doc.value, url);
         dirty = true; doc.dispatchEvent(new Event('input')); refreshPics(doc.value);
         $('#av-url').value = '';
         setStatus(msg, 'Video added below. Press Save to publish it.', 'ok');
+      }
+      /* ---------- Pictures and videos as a list you can drag, click to preview, and edit without touching the text ---------- */
+      var mediaSel = 0, mdrag = null;
+      function indentOf(l) { return l.match(/^\s*/)[0].length; }
+      function yval(v) {
+        v = v.trim(); var m;
+        if (v.charAt(0) === '"') { m = v.match(/^"((?:[^"\\]|\\.)*)"/); return m ? m[1].replace(/\\(["\\])/g, '$1') : v; }
+        if (v.charAt(0) === "'") { m = v.match(/^'((?:[^']|'')*)'/); return m ? m[1].replace(/''/g, "'") : v; }
+        return v.replace(/\s+#.*$/, '');
+      }
+      /* The media list at the top of the file, as items (each with the range of lines it occupies). */
+      function mediaModel(text) {
+        var lines = text.replace(/\r\n/g, '\n').split('\n'), end = frontBounds(lines);
+        if (end === null) return null;
+        var key = -1; for (var i = 1; i < end; i++) if (/^media:\s*(#.*|\[\s*\]\s*)?$/.test(lines[i])) { key = i; break; }
+        var model = { lines: lines, end: end, key: key, items: [] };
+        if (key < 0) return model;
+        var starts = [], last = key, base = -1;
+        for (var j = key + 1; j < end; j++) {
+          var l = lines[j];
+          if (/^\s*-\s/.test(l) || /^\s+\S/.test(l)) {
+            if (/^\s*-\s/.test(l) && (base < 0 || indentOf(l) === base)) { if (base < 0) base = indentOf(l); starts.push(j); }
+            last = j;
+          } else if (l.trim() === '' || /^#/.test(l)) continue;
+          else break;
+        }
+        starts.forEach(function (st, k) {
+          var e = k + 1 < starts.length ? starts[k + 1] : last + 1, it = { s: st, e: e, type: 'image' };
+          for (var q = st; q < e; q++) {
+            var fm = lines[q].match(/^\s*(?:-\s+)?(\w+):\s*(.*)$/); if (fm) it[fm[1]] = yval(fm[2]);
+          }
+          model.items.push(it);
+        });
+        return model;
+      }
+      function moveMedia(text, from, to) {
+        var m = mediaModel(text); if (!m || from === to || !m.items[from] || to < 0 || to >= m.items.length) return text;
+        var blocks = m.items.map(function (it) { return m.lines.slice(it.s, it.e); });
+        var first = m.items[0].s, lastE = m.items[m.items.length - 1].e;
+        blocks.splice(to, 0, blocks.splice(from, 1)[0]);
+        var flat = []; blocks.forEach(function (b) { flat = flat.concat(b); });
+        m.lines.splice.apply(m.lines, [first, lastE - first].concat(flat));
+        return m.lines.join('\n');
+      }
+      function removeMedia(text, i) {
+        var m = mediaModel(text); if (!m || !m.items[i]) return text;
+        var it = m.items[i]; m.lines.splice(it.s, it.e - it.s);
+        if (m.items.length === 1) m.lines[m.key] = 'media: []';
+        return m.lines.join('\n');
+      }
+      function setMediaField(text, i, key, value) {
+        var m = mediaModel(text); if (!m || !m.items[i]) return text;
+        var it = m.items[i], re = new RegExp('^(\\s*(?:-\\s+)?)' + key + ':.*$'), shown = key === 'fit' ? value : yq(value);
+        for (var q = it.s; q < it.e; q++) if (re.test(m.lines[q])) { m.lines[q] = m.lines[q].replace(re, '$1' + key + ': ' + shown.replace(/\$/g, '$$$$')); return m.lines.join('\n'); }
+        var at = it.e - 1; while (at > it.s && (m.lines[at].trim() === '' || /^\s*#/.test(m.lines[at]))) at--;
+        m.lines.splice(at + 1, 0, m.lines[it.s].match(/^\s*/)[0] + '  ' + key + ': ' + shown);
+        return m.lines.join('\n');
+      }
+      function mediaImgPath(src) { return /^\.\.\/\.\.\/assets\//.test(src) ? 'src/' + src.slice(6) : 'src/assets/' + (current.kind === 'timeline' ? 'timeline' : 'work') + '/' + src; }
+      function mediaImgUrl(src) { var p = mediaImgPath(src); return '/api/edit/image?path=' + encodeURIComponent(p) + (bust[p] ? '&v=' + bust[p] : ''); }
+      function mediaName(it) { return it.type === 'video' ? (it.title || 'YouTube video') : String(it.src || '').split('/').pop(); }
+      function mediaThumb(it, big) { var id = it.type === 'video' ? youtubeId(it.url || '') : null; return it.type === 'video' ? (id ? 'https://i.ytimg.com/vi/' + id + '/' + (big ? 'hqdefault' : 'mqdefault') + '.jpg' : '') : mediaImgUrl(it.src || ''); }
+      function setMediaText(after, msgText, before) {
+        var doc = $('#doc'), msg = $('#pic-msg');
+        doc.value = after; dirty = true; doc.dispatchEvent(new Event('input')); refreshPics(after);
+        if (!msgText) return;
+        setStatus(msg, msgText, 'ok');
+        if (before === undefined) return;
+        var undo = document.createElement('button'); undo.type = 'button'; undo.className = 'btn ghost small'; undo.textContent = 'Undo';
+        undo.addEventListener('click', function () { doc.value = before; doc.dispatchEvent(new Event('input')); refreshPics(before); setStatus(msg, 'Put back.', 'ok'); });
+        msg.appendChild(undo);
+      }
+      function dropMedia(i) {
+        var doc = $('#doc'), before = doc.value, m = mediaModel(before), it = m && m.items[i]; if (!it) return;
+        if (mediaSel >= i && mediaSel > 0) mediaSel--;
+        setMediaText(removeMedia(before, i), (it.type === 'video' ? 'Video' : 'Picture') + ' removed from this section. Press Save to publish it.', before);
+      }
+      function renderMedia(text) {
+        var box = $('#pics'), m = mediaModel(text), items = m ? m.items : [];
+        box.classList.add('mediabox');
+        if (!items.length) { box.innerHTML = '<p class="hint">No pictures or videos yet. Use the boxes below to add one.</p>'; return; }
+        if (mediaSel >= items.length) mediaSel = items.length - 1; if (mediaSel < 0) mediaSel = 0;
+        var typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('#mfields');
+        if (!$('#mtop', box)) box.innerHTML = '<div id="mtop"></div><p class="mhint">Drag ⠿ (or use the up and down arrow keys on it) to change the order. Click one to preview it.</p><ol class="mlist" id="mlist"></ol>';
+        if (!typing) {
+          var it = items[mediaSel], top = '';
+          if (it.type === 'video') {
+            top = '<div class="mprev"><div class="mvideo" id="mvideo"><button type="button" class="mplay" id="mplay" aria-label="Play the video"><img alt="" src="' + esc(mediaThumb(it, true)) + '" /><span>▶</span></button></div></div>' +
+              '<div class="mfields" id="mfields"><div><label for="mf-title">Title of the video (read aloud by screen readers)</label><input id="mf-title" type="text" value="' + esc(it.title || '') + '" /></div><div><label>Link</label><p class="hint" style="margin:8px 0 0;word-break:break-all">' + esc(it.url || '') + '</p></div></div>';
+          } else {
+            top = '<div class="mprev"><button type="button" class="picbtn" aria-label="View ' + esc(mediaName(it)) + ' larger"><img alt="Preview of ' + esc(mediaName(it)) + '" src="' + esc(mediaImgUrl(it.src || '')) + '" /></button></div>' +
+              '<div class="mfields" id="mfields"><div><label for="mf-alt">Description (read aloud by screen readers)</label><input id="mf-alt" type="text" value="' + esc(it.alt || '') + '" /></div>' +
+              '<div><label for="mf-fit">How should it show?</label><select id="mf-fit"><option value="contain"' + (it.fit === 'cover' ? '' : ' selected') + '>Show the whole picture</option><option value="cover"' + (it.fit === 'cover' ? ' selected' : '') + '>Fill the frame (may crop the edges)</option></select></div></div>';
+          }
+          $('#mtop', box).innerHTML = top;
+        }
+        $('#mlist', box).innerHTML = items.map(function (x, i) {
+          var n = esc(mediaName(x));
+          return '<li class="mitem' + (i === mediaSel ? ' sel' : '') + '" data-i="' + i + '"><button type="button" class="mgrip" aria-label="Move ' + n + '. Drag it, or use the up and down arrow keys.">⠿</button>' +
+            '<button type="button" class="mpick" data-i="' + i + '" aria-label="Preview ' + n + '"' + (i === mediaSel ? ' aria-current="true"' : '') + '><img alt="" loading="lazy" src="' + esc(mediaThumb(x, false)) + '" /><span class="mname"><b>' + (x.type === 'video' ? 'Video' : 'Picture') + '</b>' + n + '</span></button>' +
+            '<button type="button" class="mx" data-i="' + i + '" aria-label="Remove ' + n + ' from this section">×</button></li>';
+        }).join('');
+        wireMedia(box);
+      }
+      function wireMedia(box) {
+        var doc = $('#doc');
+        box.onclick = function (e) {
+          var pick = e.target.closest('.mpick'); if (pick) { mediaSel = +pick.dataset.i; renderMedia(doc.value); return; }
+          var x = e.target.closest('.mx'); if (x) { dropMedia(+x.dataset.i); return; }
+          if (e.target.closest('#mplay')) {
+            var m = mediaModel(doc.value), it = m && m.items[mediaSel], id = it && youtubeId(it.url || ''); if (!id) return;
+            $('#mvideo').innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1" title="' + esc(it.title || 'Video') + '" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+          }
+        };
+        var edit = function (e) {
+          var map = { 'mf-alt': 'alt', 'mf-title': 'title', 'mf-fit': 'fit' }, k = map[e.target.id]; if (!k) return;
+          doc.value = setMediaField(doc.value, mediaSel, k, e.target.value); dirty = true; doc.dispatchEvent(new Event('input'));
+        };
+        box.oninput = edit; box.onchange = edit;
+        box.onpointerdown = function (e) {
+          var grip = e.target.closest('.mgrip'); if (!grip || (e.pointerType === 'mouse' && e.button !== 0)) return;
+          var li = grip.closest('li'); e.preventDefault(); grip.setPointerCapture(e.pointerId);
+          mdrag = { li: li, ul: li.parentNode, from: +li.dataset.i }; li.classList.add('dragging'); document.body.style.cursor = 'grabbing';
+        };
+        box.onpointermove = function (e) {
+          if (!mdrag) return;
+          var others = Array.prototype.filter.call(mdrag.ul.children, function (x) { return x !== mdrag.li; }), next = null;
+          for (var k = 0; k < others.length; k++) { var r = others[k].getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { next = others[k]; break; } }
+          if (next !== mdrag.li.nextElementSibling) mdrag.ul.insertBefore(mdrag.li, next);
+          if (e.clientY < 40) window.scrollBy(0, -10); else if (e.clientY > window.innerHeight - 40) window.scrollBy(0, 10);
+        };
+        var endMove = function () {
+          if (!mdrag) return;
+          var d = mdrag; mdrag = null; d.li.classList.remove('dragging'); document.body.style.cursor = '';
+          var to = Array.prototype.indexOf.call(d.ul.children, d.li);
+          if (to === d.from) return;
+          var before = doc.value;
+          mediaSel = mediaSel === d.from ? to : (d.from < mediaSel && to >= mediaSel ? mediaSel - 1 : (d.from > mediaSel && to <= mediaSel ? mediaSel + 1 : mediaSel));
+          setMediaText(moveMedia(before, d.from, to), 'Order changed. Press Save to publish it.', before);
+        };
+        box.onpointerup = endMove; box.onpointercancel = endMove;
+        box.onkeydown = function (e) {
+          var grip = e.target.closest && e.target.closest('.mgrip');
+          if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+          e.preventDefault();
+          var from = +grip.closest('li').dataset.i, to = from + (e.key === 'ArrowUp' ? -1 : 1), before = doc.value, count = $('#mlist', box).children.length;
+          if (to < 0 || to >= count) return;
+          if (mediaSel === from) mediaSel = to; else if (mediaSel === to) mediaSel = from;
+          setMediaText(moveMedia(before, from, to), 'Moved to position ' + (to + 1) + ' of ' + count + '. Press Save to publish it.', before);
+          var g = $('#mlist', box).children[to].querySelector('.mgrip'); if (g) g.focus();
+        };
       }
       function wireAddPic() {
         var av = $('#av-add'); if (av) av.addEventListener('click', addVideo);
@@ -525,7 +709,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           if (r.status === 401) { location.reload(); return; }
           if (!r.ok) { setStatus(msg, r.data.error || 'Upload failed.', 'error'); return; }
           var doc = $('#doc'), fit = 'contain', alt = about ? '' : altFromName(r.data.reference);
-          doc.value = insertPicture(doc.value, kind, r.data.reference, alt, fit);
+          mediaSel = 1e6; doc.value = insertPicture(doc.value, kind, r.data.reference, alt, fit);
           dirty = true; doc.dispatchEvent(new Event('input'));
           var p = 'src/' + r.data.reference.slice(6); delete picNodes[p]; bust[p] = Date.now();
           refreshPics(doc.value);
@@ -539,6 +723,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       var picNodes = {}, picTimer = 0, bust = {};
       function refreshPics(text) {
         var box = $('#pics'); if (!box) return;
+        if (current.kind !== 'about') { renderMedia(text); return; }
         var found = [], re = /\.\.\/\.\.\/assets\/[A-Za-z0-9._\/-]+\.(?:jpe?g|png|webp)/gi, m;
         while ((m = re.exec(text))) { var p = 'src/' + m[0].slice(6); if (found.indexOf(p) < 0) found.push(p); }
         // pictures written as just a file name live in this kind of page's own folder
@@ -585,6 +770,11 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           current = { path: path, kind: r.data.kind, sha: r.data.sha };
           dirty = false; renderSide();
           renderDoc(r.data.text);
+          var d = readDraft();
+          if (d && d.path === path && d.sha === r.data.sha && d.text !== r.data.text) {
+            $('#doc').value = d.text; dirty = true; if ($('#prev')) { refreshPics(d.text); $('#prev').innerHTML = md(bodyOf(d.text)); }
+            setStatus($('#msg'), 'Your unsaved changes were restored. Press Save to publish them.', 'ok');
+          } else if (d && d.path === path) clearDraft();
           main.focus();
         });
       }
@@ -598,7 +788,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           '<details class="help"><summary>Example text template</summary><p>Compare your file with this example, or copy it to start from. Lines starting with <code>#</code> are notes to you.</p><pre class="tpl" id="tpl" tabindex="0"></pre><button class="btn ghost small" id="copytpl" type="button">Copy the template</button></details>' +
           '<div class="field"><label for="doc">' + (isMd ? 'The page file' : 'The settings file') + '</label><textarea id="doc" rows="30" spellcheck="false"></textarea></div>' +
           (isMd ? '<details class="prevwrap" open><summary>Preview of the text</summary><div class="preview" id="prev"></div></details>' +
-            '<details class="prevwrap" open><summary>' + (current.kind === 'about' ? 'Pictures in this file' : 'Pictures &amp; videos in this file') + '</summary>' + '<div class="pics" id="pics"></div><p id="pic-msg" class="status" role="status" aria-live="polite"></p>' + addPicBox() + addVideoBox() + '</details>' : '');
+            '<details class="prevwrap" open><summary>' + (current.kind === 'about' ? 'Pictures in this file' : 'Pictures &amp; videos (drag to reorder)') + '</summary>' + '<div class="pics" id="pics"></div><p id="pic-msg" class="status" role="status" aria-live="polite"></p>' + addPicBox() + addVideoBox() + '</details>' : '');
         $('#tpl').textContent = TEMPLATES[current.kind] || '';
         $('#copytpl').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(TEMPLATES[current.kind] || ''); $('#copytpl').textContent = 'Copied'; });
         $('#fname').textContent = title;
@@ -607,7 +797,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         picNodes = {};
         if (isMd) { $('#prev').innerHTML = md(bodyOf(text)); refreshPics(text); }
         doc.addEventListener('input', function () {
-          dirty = true;
+          dirty = true; keepDraft(doc.value);
           if (isMd) { $('#prev').innerHTML = md(bodyOf(doc.value)); clearTimeout(picTimer); picTimer = setTimeout(function () { refreshPics(doc.value); }, 350); }
         });
         $('#save').addEventListener('click', saveDoc);
@@ -621,7 +811,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           .then(function (r) {
             btn.disabled = false;
             if (r.status === 401) { location.reload(); return; }
-            if (r.ok) { current.sha = r.data.sha; dirty = false; setStatus(msg, mode === 'GitHub' ? 'Saved. The live site updates in about a minute.' : 'Saved to the local files.', 'ok'); }
+            if (r.ok) { current.sha = r.data.sha; dirty = false; clearDraft(); setStatus(msg, mode === 'GitHub' ? 'Saved. The live site updates in about a minute.' : 'Saved to the local files.', 'ok'); }
             else setStatus(msg, r.data.error || 'Could not save.', 'error', r.data.problems);
           });
       }

@@ -3,7 +3,7 @@ label: "Design"
 period: "2004 – 2009"
 title: "Designing for engagement"
 skills: ["C# test automation", "Python tooling", "ActionScript", "Adobe Illustrator", "SME partnership"]
-media:                         
+media:
 # the picture area is a slideshow, in this order
   - type: image
     src: "01_Early_Image.png"
