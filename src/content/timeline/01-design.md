@@ -4,7 +4,8 @@ period: "2004 – 2009"
 title: "Designing for engagement"
 order: 1
 skills: ["C# test automation", "Python tooling", "ActionScript", "Adobe Illustrator", "SME partnership"]
-media:                         # the picture area is a slideshow, in this order
+media:                         
+# the picture area is a slideshow, in this order
   - type: image
     src: "../../assets/timeline/01_Early_Image.png"
     alt: "Two people working at computers in a dimly lit office; one has headphones around his neck and is typing."

@@ -18,58 +18,96 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
   <title>Edit the site</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <style is:global>
-    :root { --bg: #f6f4ef; --card: #fff; --ink: #1d2433; --muted: #566074; --line: #d9d4c7; --accent: #1f5fbf; --accent-ink: #fff; --bad: #b3261e; --ok: #1b6b3a; }
+    /* Same night-studio palette as the public site. */
+    :root { color-scheme: dark; --bg: #0b1426; --card: #12203a; --raised: #1a2d50; --ink: #f4ecd8; --muted: #b9b3a3; --line: #24365a; --accent: #f0b34a; --accent-ink: #0b1426; --bad: #ff9a9f; --ok: #8fd9a3; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-    h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.55 'Inter', system-ui, sans-serif; }
+    h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; line-height: 1.2; margin: 0 0 .5em; }
+    code { background: var(--bg); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; font-size: .92em; }
+    a { color: inherit; }
     button, input, select, textarea { font: inherit; color: inherit; }
-    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-    .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 9px 18px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn:hover:not(:disabled) { filter: brightness(1.08); }
     .btn:disabled { opacity: .55; cursor: default; }
     .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
-    .btn.small { padding: 5px 10px; font-size: 14px; }
-    input[type='text'], input[type='email'], input[type='password'], input[type='url'], select, textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; }
-    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.5; resize: vertical; }
-    label { display: block; font-weight: 600; margin: 0 0 4px; }
-    .hint { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
-    .status { min-height: 1.5em; font-weight: 600; }
+    .btn.ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); filter: none; }
+    .btn.small { padding: 5px 12px; font-size: 14px; }
+    input[type='text'], input[type='email'], input[type='password'], input[type='url'], select, textarea { width: 100%; border: 1.5px solid var(--line); border-radius: 6px; padding: 9px 11px; background: var(--bg); color: var(--ink); }
+    select option { background: var(--bg); }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14.5px; line-height: 1.65; resize: vertical; tab-size: 2; }
+    label { display: block; font-weight: 600; margin: 0 0 6px; }
+    .hint { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+    .status { min-height: 1.5em; font-weight: 600; margin: 0; }
     .status.error { color: var(--bad); }
     .status.ok { color: var(--ok); }
-    .problems { margin: 6px 0 0; padding-left: 20px; color: var(--bad); font-weight: 400; }
+    .problems { margin: 6px 0 0; padding-left: 20px; font-weight: 400; }
 
-    .login { max-width: 380px; margin: 12vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 28px; }
-    .login .field { margin: 16px 0; }
+    .login { max-width: 400px; margin: 12vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 30px; }
+    .login .field { margin: 18px 0; }
 
-    .top { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
-    .top h1 { font-size: 20px; margin: 0; margin-right: auto; }
-    .mode { font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
-    .layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; padding: 20px; max-width: 1280px; margin: 0 auto; }
-    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
-    .side { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; align-self: start; }
-    .side h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
-    .side h2:first-child { margin-top: 0; }
+    .top { display: flex; align-items: center; gap: 12px; padding: 14px 24px; background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+    .top h1 { font-size: 20px; margin: 0 auto 0 0; }
+    .mode { font-size: 13px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 12px; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 22px; padding: 24px; max-width: 1320px; margin: 0 auto; }
+    @media (max-width: 880px) { .layout { grid-template-columns: 1fr; } }
+
+    .side { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 12px; align-self: start; position: sticky; top: 78px; max-height: calc(100vh - 100px); overflow: auto; }
+    @media (max-width: 880px) { .side { position: static; max-height: none; } }
+    .side h2 { font: 600 12px 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 18px 0 6px 8px; display: flex; gap: 8px; align-items: center; }
+    .side h2:first-child { margin-top: 2px; }
+    .side h2 .n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; }
     .side ul { list-style: none; margin: 0; padding: 0; }
-    .side li button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 7px 8px; cursor: pointer; }
-    .side li button:hover { background: var(--bg); }
-    .side li button[aria-current='true'] { background: #e3ecfb; font-weight: 600; }
-    .newbtn { margin: 6px 0 0 8px; }
-    .main { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-height: 360px; }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .row.between { justify-content: space-between; }
-    .path { font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+    .side li button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; color: var(--ink); }
+    .side li button:hover { background: var(--raised); }
+    .side li button[aria-current='true'] { background: var(--raised); box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; }
+    .newbtn { margin: 6px 0 0 10px; }
+
+    .main { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0 22px 22px; min-height: 380px; }
+    .bar { position: sticky; top: 56px; z-index: 5; background: var(--card); padding: 18px 0 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+    .bar h2 { font-size: 24px; margin: 0; }
+    .path { font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); margin-top: 2px; }
+    .help { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 0 0 14px; font-size: 14.5px; }
+    .help summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+    .help p { margin: 8px 0 0; }
+    .tpl { margin: 10px 0 12px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); white-space: pre-wrap; overflow: auto; max-height: 340px; }
     .field { margin: 0 0 16px; }
-    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 1000px) { .split { grid-template-columns: 1fr; } }
-    .preview { border: 1.5px dashed var(--line); border-radius: 6px; padding: 12px 14px; background: #fcfbf8; }
-    .preview h3 { font-size: 17px; margin: 14px 0 6px; }
+    .prevwrap { margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 16px; }
+    .prevwrap summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+    .preview { padding-top: 8px; }
+    .preview h3 { font-size: 18px; color: var(--accent); margin: 16px 0 6px; }
     .preview p, .preview ul { margin: 0 0 10px; }
-    .help { background: #f1f5fc; border: 1px solid #cfdcf3; border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }
-    .help summary { cursor: pointer; font-weight: 600; }
-    .help code { background: #fff; padding: 0 4px; border-radius: 4px; }
-    .linkrow { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; margin: 0 0 8px; }
-    .result { background: #edf7f0; border: 1px solid #b9dcc4; border-radius: 8px; padding: 10px 14px; margin-top: 12px; }
-    .result code { background: #fff; padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+    .preview a { color: var(--accent); }
+    .main:focus { outline: none; }
+    .addpic { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 16px 0 4px; }
+    .addpic label { margin-top: 10px; }
+    .addpic label:first-child { margin-top: 0; }
+    .addpic input[type='file'] { padding: 7px; }
+    .addpic .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+    .pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 12px; padding-top: 10px; }
+    .pic { position: relative; margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .pic .picx { position: absolute; top: 6px; right: 6px; z-index: 2; width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); background: rgba(8, 14, 28, .78); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; padding: 0; }
+    .pic .picx:hover { background: var(--bad); border-color: var(--bad); color: #0b1426; }
+    #pic-msg { margin-top: 12px; }
+    #pic-msg .btn { margin-left: 8px; }
+    .pic .picbtn { display: block; width: 100%; padding: 0; border: 0; background: #000; cursor: zoom-in; }
+    .pic img { display: block; width: 100%; height: 190px; object-fit: contain; background: #000; }
+    .pic figcaption { padding: 6px 8px; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); word-break: break-all; }
+    .pic.missing { padding: 14px 10px; color: var(--bad); font-size: 14px; }
+    .pic.missing figcaption { padding: 6px 0 0; }
+    .uppic { display: block; max-width: min(100%, 320px); max-height: 240px; margin-top: 10px; border-radius: 6px; background: #000; border: 1px solid var(--line); cursor: zoom-in; }
+    .lightbox { padding: 0; border: 1px solid var(--line); border-radius: 12px; background: #000; color: var(--ink); max-width: 96vw; max-height: 96vh; min-width: min(280px, 96vw); overflow: hidden; }
+    .lightbox::backdrop { background: rgba(5, 10, 20, .82); }
+    /* The script sizes the picture to the largest size that still fits the window (it can also enlarge small ones). */
+    .lightbox img { display: block; max-width: 96vw; max-height: calc(96vh - 46px); object-fit: contain; margin: 0 auto; }
+    .lightbox .lb-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; background: var(--card); font: 13px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+    .result { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; margin-top: 14px; }
+    .result code { word-break: break-all; }
+    .main > h2 { margin-top: 22px; }
   </style>
 </head>
 <body>
@@ -88,7 +126,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           <input id="pw" type="password" autocomplete="current-password" required />
         </div>
         <button class="btn" type="submit">Sign in</button>
-        <p id="login-status" class="status" role="alert"></p>
+        <p id="login-status" class="status error" role="alert" style="margin-top:12px"></p>
       </form>
     </main>
   ) : (
@@ -100,9 +138,11 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         <button class="btn ghost small" id="logout" type="button">Sign out</button>
       </header>
       <div class="layout">
-        <nav class="side" aria-label="Things you can edit" id="side">Loading…</nav>
+        <nav class="side" aria-label="Things you can edit, in the order they appear on the site" id="side">Loading…</nav>
+        <dialog class="lightbox" id="lightbox" aria-label="Picture viewer"><div class="lb-bar"><span id="lb-name"></span><button class="btn ghost small" id="lb-close" type="button">Close</button></div><img id="lb-img" alt="" /></dialog>
         <main class="main" id="main" tabindex="-1">
-          <p>Choose something to edit from the list.</p>
+          <h2>Choose something to edit</h2>
+          <p>The list on the left follows the page from top to bottom, the same order visitors see it.</p>
           <p class="hint">Your changes go live on the site about a minute after you press Save.</p>
         </main>
       </div>
@@ -166,46 +206,132 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           if (r.status === 401) { location.reload(); return; }
           if (!r.ok) { side.textContent = r.data.error || 'Could not load the list.'; return; }
           files = r.data; renderSide();
+          if (!current) openFile(files.about.path); // start on the home page intro
         });
       }
 
-      function group(title, items, kind) {
-        var h = '<h2>' + esc(title) + '</h2><ul>';
-        items.forEach(function (f) {
-          h += '<li><button type="button" data-open="' + esc(f.path) + '" data-kind="' + kind + '"' + (current && current.path === f.path ? ' aria-current="true"' : '') + '>' + esc(f.label) + '</button></li>';
-        });
-        return h + '</ul>';
+      /* The list follows the page from top to bottom, the same order visitors see it. */
+      function item(label, attrs, path) {
+        var on = current && current.path === path ? ' aria-current="true"' : '';
+        return '<li><button type="button" ' + attrs + on + '>' + esc(label) + '</button></li>';
       }
+      function head(n, title) { return '<h2><span class="n">' + n + '</span>' + esc(title) + '</h2>'; }
       function renderSide() {
         var h = '';
-        h += group('Case studies', files.work, 'work');
-        h += '<button class="btn ghost small newbtn" type="button" data-new="work">+ New case study</button>';
-        h += group('My Journey steps', files.timeline, 'timeline');
+        h += head(1, 'Top of the page');
+        h += '<ul>' + item(files.about.label, 'data-open="' + esc(files.about.path) + '"', files.about.path) + '</ul>';
+        h += head(2, 'My Journey');
+        h += '<ul>' + files.timeline.map(function (f) { return item(f.label, 'data-open="' + esc(f.path) + '"', f.path); }).join('') + '</ul>';
         h += '<button class="btn ghost small newbtn" type="button" data-new="timeline">+ New step</button>';
-        h += '<h2>Page text</h2><ul>';
-        h += '<li><button type="button" data-open="' + esc(files.about.path) + '" data-kind="about"' + (current && current.path === files.about.path ? ' aria-current="true"' : '') + '>' + esc(files.about.label) + '</button></li>';
-        h += '<li><button type="button" data-open="' + esc(files.site.path) + '" data-kind="site"' + (current && current.path === files.site.path ? ' aria-current="true"' : '') + '>' + esc(files.site.label) + '</button></li></ul>';
-        h += '<h2>Pictures &amp; files</h2><ul><li><button type="button" data-uploads="1"' + (current && current.path === 'uploads' ? ' aria-current="true"' : '') + '>Upload pictures, files, resumes</button></li></ul>';
+        h += head(3, 'Work History');
+        h += '<ul>' + files.work.map(function (f) { return item(f.label, 'data-open="' + esc(f.path) + '"', f.path); }).join('') + '</ul>';
+        h += '<button class="btn ghost small newbtn" type="button" data-new="work">+ New case study</button>';
+        h += head(4, 'Resumes');
+        h += '<ul>' + item('Replace a resume PDF', 'data-resume="1"', 'uploads:resume') + '</ul>';
+        h += head(5, 'Footer & contact form');
+        h += '<ul>' + item(files.site.label, 'data-open="' + esc(files.site.path) + '"', files.site.path) + '</ul>';
+        h += '<h2>Anywhere</h2><ul>' + item('Upload pictures & files', 'data-uploads="1"', 'uploads') + '</ul>';
         side.innerHTML = h;
       }
       side.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;
         if (!confirmLeave()) return;
-        if (b.dataset.open) openFile(b.dataset.open, b.dataset.kind);
+        if (b.dataset.open) openFile(b.dataset.open);
         else if (b.dataset.uploads) openUploads();
+        else if (b.dataset.resume) openUploads('resume');
         else if (b.dataset.new) newFile(b.dataset.new);
       });
 
-      /* ---------- Markdown files ---------- */
-      var HELP = {
-        work: '<p><b>Details</b> (the top box) are named lines such as <code>title:</code>, <code>outcome:</code> (the one-line summary on the card), <code>role:</code>, <code>org:</code>, <code>dates:</code>, <code>tracks:</code> (learning-design, teaching, engineering, design-ux) and <code>order:</code> (1 shows first). Set <code>draft: true</code> to hide a case study without deleting it.</p><p>To show pictures, files or links in the popup, add <code>images:</code>, <code>artifacts:</code> or <code>links:</code> lists. Upload the picture first, then paste the path it gives you.</p><p><b>Text</b> (the bottom box) is the deeper description. Use <code>### Context</code> for a heading, <code>- </code> for bullet points and <code>**bold**</code>.</p>',
-        timeline: '<p><b>Details</b> are <code>label:</code> (the short tag, like Design), <code>period:</code> (the dates), <code>title:</code>, <code>order:</code> (1 = earliest), <code>skills:</code> (the small pills) and an optional <code>media:</code> list for pictures and YouTube videos. Upload a picture first, then paste the path it gives you.</p><p><b>Text</b> is the paragraph shown beside the pictures.</p>',
-        about: '<p><b>Details</b> hold the <code>headshot:</code> picture and its <code>headshotAlt:</code> description. <b>Text</b> is the paragraph in the About box on the home page.</p>'
+      /* ---------- One continuous file ---------- */
+      var TEMPLATES = {
+        work: [
+        '---',
+        'title: "Name of the project"',
+        'outcome: "One line that sums up the project (shown on the card)."',
+        'role: "Your role"',
+        'org: "Organization"',
+        'dates: "2023–Present"',
+        'tools: []',
+        'tracks: [learning-design, teaching]   # learning-design, teaching, engineering, design-ux',
+        'order: 3                              # 1 shows first',
+        'draft: false                          # true hides it from the site',
+        '# Optional extras for the popup (delete what you do not need):',
+        'images:',
+        '  - src: "../../assets/work/your-picture.jpg"   # upload it first, then paste its path',
+        '    alt: "Describe the picture in a short phrase"',
+        '    fit: contain                                # or cover',
+        'artifacts:',
+        '  - label: "Name of a file"',
+        '    url: "/artifacts/your-file.pdf"',
+        'links:',
+        '  - label: "Name of a link"',
+        '    url: "https://example.com"',
+        '---',
+        '',
+        '### Context',
+        '',
+        'Why this project existed, in a few plain sentences.',
+        '',
+        '### Approach',
+        '',
+        'What you did and why.',
+        '',
+        '### What I built',
+        '',
+        '- First thing',
+        '- Second thing',
+        '',
+        '### Outcome',
+        '',
+        'What changed as a result.'
+      ].join('\n'),
+        timeline: [
+        '---',
+        'label: "Design"                 # the short tag shown first',
+        'period: "2004 – 2009"           # the dates',
+        'title: "Name of this stretch of your career"',
+        'order: 1                        # 1 = earliest',
+        'skills: ["Skill one", "Skill two", "Skill three"]   # the small pills',
+        '# Optional pictures and videos, shown as a slideshow in this order:',
+        'media:',
+        '  - type: image',
+        '    src: "../../assets/timeline/your-picture.jpg"   # upload it first, then paste its path',
+        '    alt: "Describe the picture in a short phrase"',
+        '    fit: contain                                    # or cover',
+        '  - type: video',
+        '    url: "https://youtu.be/XXXXXXXXXXX"',
+        '    title: "The title of the video"',
+        '---',
+        '',
+        'A few plain sentences about this stretch of your career: what you did and what changed.'
+      ].join('\n'),
+        about: [
+        '---',
+        'title: "About"',
+        'tagline: "The big line at the top of the home page."',
+        'headshot: "../../assets/headshot.jpg"',
+        'headshotAlt: "A short description of your photo"',
+        '---',
+        '',
+        'The paragraph that appears in the About me box on the home page.'
+      ].join('\n'),
+        site: [
+        'name: Your Name',
+        'email: you@example.com',
+        'links:                     # a link with an empty url is hidden',
+        '  - label: LinkedIn',
+        '    url: https://www.linkedin.com/in/your-name/',
+        '  - label: GitHub',
+        '    url: ""',
+        'contactReasons:            # choices in the contact form dropdown (up to 12)',
+        '  - Hiring opportunity',
+        '  - Just saying hello'
+      ].join('\n')
       };
 
-      function splitFM(text) {
-        var m = text.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-        return m ? { fm: m[1], body: m[2].replace(/^\n+/, '') } : { fm: '', body: text };
+      function bodyOf(text) {
+        var m = text.replace(/\r\n/g, '\n').match(/^---\n[\s\S]*?\n---\n?([\s\S]*)$/);
+        return m ? m[1].replace(/^\n+/, '') : '';
       }
       function inline(s) {
         return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/\[(.+?)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
@@ -223,40 +349,195 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         return out + (list ? '</ul>' : '');
       }
 
-      function openFile(path, kind) {
-        main.innerHTML = 'Loading…';
+      /* ---------- Add a picture right here, inside the section you are editing ---------- */
+      function addPicBox() {
+        var about = current.kind === 'about';
+        return '<div class="addpic">' +
+          '<label for="ap-file">' + (about ? 'Replace the headshot photo' : 'Add a picture to this ' + (current.kind === 'work' ? 'case study' : 'step')) + '</label>' +
+          '<input id="ap-file" type="file" accept="image/jpeg,image/png,image/webp" />' +
+          '<div id="ap-details" hidden>' +
+            '<label for="ap-alt">' + (about ? 'Describe the photo (read aloud by screen readers)' : 'Describe the picture in a few words (read aloud by screen readers)') + '</label>' +
+            '<input id="ap-alt" type="text" />' +
+            (about ? '' : '<label for="ap-fit">How should it show?</label><select id="ap-fit"><option value="contain">Show the whole picture</option><option value="cover">Fill the frame (may crop the edges)</option></select>') +
+            '<div class="row"><button class="btn" id="ap-add" type="button">' + (about ? 'Upload and replace' : 'Upload and add') + '</button></div>' +
+          '</div>' +
+          '<p class="hint">The picture is shrunk for the web, uploaded, and ' + (about ? 'swapped in for the current headshot.' : 'added to the picture list at the top of this file.') + ' Then press Save to publish.</p>' +
+        '</div>';
+      }
+      function yq(s) { return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
+      /* Edits the block between the two --- lines at the top: sets one line, or adds an item to a list. */
+      function frontBounds(lines) {
+        if (lines[0] !== '---') return null;
+        for (var i = 1; i < lines.length; i++) if (lines[i] === '---') return i;
+        return null;
+      }
+      function setLine(lines, key, value) {
+        var end = frontBounds(lines); if (end === null) return lines;
+        var re = new RegExp('^' + key + ':');
+        for (var i = 1; i < end; i++) if (re.test(lines[i])) { lines[i] = key + ': ' + value; return lines; }
+        lines.splice(end, 0, key + ': ' + value); return lines;
+      }
+      function addListItem(lines, key, item) {
+        var end = frontBounds(lines); if (end === null) return lines;
+        var re = new RegExp('^' + key + ':\\s*(#.*|\\[\\s*\\]\\s*)?$');
+        for (var i = 1; i < end; i++) {
+          if (re.test(lines[i])) {
+            // "images: []" or a trailing note becomes a plain "images:" line (a note on that line is kept)
+            lines[i] = key + ':' + (/#/.test(lines[i]) ? ' ' + lines[i].slice(lines[i].indexOf('#')) : '');
+            // The list runs while lines are indented or start with "-". Notes (# ...) and blank lines inside it are skipped over.
+            var last = i;
+            for (var j = i + 1; j < end; j++) {
+              if (/^\s+\S/.test(lines[j]) || /^-/.test(lines[j])) last = j;
+              else if (lines[j].trim() === '' || /^#/.test(lines[j])) continue;
+              else break;
+            }
+            lines.splice.apply(lines, [last + 1, 0].concat(item)); return lines;
+          }
+        }
+        lines.splice.apply(lines, [end, 0, key + ':'].concat(item)); return lines;
+      }
+      function insertPicture(text, kind, ref, alt, fit) {
+        var lines = text.replace(/\r\n/g, '\n').split('\n');
+        if (kind === 'about') {
+          lines = setLine(lines, 'headshot', yq(ref));
+          if (alt) lines = setLine(lines, 'headshotAlt', yq(alt));
+        } else if (kind === 'work') {
+          lines = addListItem(lines, 'images', ['  - src: ' + yq(ref), '    alt: ' + yq(alt), '    fit: ' + fit]);
+        } else {
+          lines = addListItem(lines, 'media', ['  - type: image', '    src: ' + yq(ref), '    alt: ' + yq(alt), '    fit: ' + fit]);
+        }
+        return lines.join('\n');
+      }
+      /* Takes one picture out of the file's list (the uploaded file itself stays in storage). */
+      function removePicture(text, ref) {
+        var lines = text.replace(/\r\n/g, '\n').split('\n');
+        var end = frontBounds(lines); if (end === null) return text;
+        for (var guard = 0, found = true; found && guard < 20; guard++) {
+          found = false;
+          for (var i = 1; i < end; i++) {
+            if (lines[i].indexOf(ref) < 0 || !/^\s*(-\s+)?src:/.test(lines[i])) continue;
+            var s = i; while (s > 1 && !/^\s*-\s/.test(lines[s])) s--;
+            if (!/^\s*-\s/.test(lines[s])) break;
+            var indent = lines[s].match(/^\s*/)[0].length, e = s + 1;
+            while (e < end && lines[e].trim() !== '' && lines[e].match(/^\s*/)[0].length > indent) e++;
+            lines.splice(s, e - s); end -= (e - s); found = true;
+            // if that was the last picture, the list becomes an empty list ("images: []")
+            var k = s - 1; while (k > 0 && (lines[k].trim() === '' || /^#/.test(lines[k]))) k--;
+            var more = false; for (var m = s; m < end; m++) { if (/^\s*-\s/.test(lines[m])) { more = true; break; } if (/^[^\s#]/.test(lines[m])) break; }
+            if (/^(images|media):/.test(lines[k]) && !more) lines[k] = lines[k].split(':')[0] + ': []';
+            break;
+          }
+        }
+        return lines.join('\n');
+      }
+      function dropPicture(p) {
+        var doc = $('#doc'), msg = $('#pic-msg'), before = doc.value, ref = '../../' + p.slice(4);
+        var after = removePicture(before, ref);
+        if (after === before) { setStatus(msg, 'That picture is not in the picture list, so there is nothing to remove.', 'error'); return; }
+        doc.value = after; dirty = true; doc.dispatchEvent(new Event('input')); refreshPics(after);
+        setStatus(msg, 'Picture removed from this section. Press Save to publish it.', 'ok');
+        var undo = document.createElement('button'); undo.type = 'button'; undo.className = 'btn ghost small'; undo.textContent = 'Undo';
+        undo.addEventListener('click', function () { doc.value = before; doc.dispatchEvent(new Event('input')); refreshPics(before); setStatus(msg, 'Put back.', 'ok'); });
+        msg.appendChild(undo);
+      }
+      function wireAddPic() {
+        var f = $('#ap-file'); if (!f) return;
+        f.addEventListener('change', function () { $('#ap-details').hidden = !f.files[0]; if (f.files[0]) $('#ap-alt').focus(); });
+        $('#ap-add').addEventListener('click', addPicture);
+      }
+      function addPicture() {
+        var f = $('#ap-file').files[0], alt = $('#ap-alt').value.trim(), msg = $('#pic-msg'), kind = current.kind, btn = $('#ap-add');
+        if (!f) { setStatus(msg, 'Choose a picture first.', 'error'); return; }
+        if (kind !== 'about' && !alt) { setStatus(msg, 'Please describe the picture in a few words.', 'error'); $('#ap-alt').focus(); return; }
+        var target = kind === 'work' ? 'work-image' : kind === 'timeline' ? 'timeline-image' : 'headshot';
+        btn.disabled = true; setStatus(msg, 'Uploading…');
+        prepare(f, target).then(function (file) {
+          var fd = new FormData(); fd.append('file', file); fd.append('target', target); fd.append('resumeId', '');
+          return api('/api/edit/upload', { method: 'POST', body: fd });
+        }).then(function (r) {
+          btn.disabled = false;
+          if (r.status === 401) { location.reload(); return; }
+          if (!r.ok) { setStatus(msg, r.data.error || 'Upload failed.', 'error'); return; }
+          var doc = $('#doc'), fit = $('#ap-fit') ? $('#ap-fit').value : 'contain';
+          doc.value = insertPicture(doc.value, kind, r.data.reference, alt, fit);
+          dirty = true; doc.dispatchEvent(new Event('input'));
+          var p = 'src/' + r.data.reference.slice(6); delete picNodes[p]; bust[p] = Date.now();
+          refreshPics(doc.value);
+          $('#ap-file').value = ''; $('#ap-alt').value = ''; $('#ap-details').hidden = true;
+          setStatus(msg, kind === 'about' ? 'Headshot replaced. Press Save to publish it.' : 'Picture added below. Press Save to publish it.', 'ok');
+          msg.scrollIntoView({ block: 'nearest' });
+        });
+      }
+
+      /* Shows every picture the file mentions (the ../../assets/... paths), read from the site's own folders. */
+      var picNodes = {}, picTimer = 0, bust = {};
+      function refreshPics(text) {
+        var box = $('#pics'); if (!box) return;
+        var found = [], re = /\.\.\/\.\.\/assets\/[A-Za-z0-9._\/-]+\.(?:jpe?g|png|webp)/gi, m;
+        while ((m = re.exec(text))) { var p = 'src/' + m[0].slice(6); if (found.indexOf(p) < 0) found.push(p); }
+        box.innerHTML = '';
+        if (!found.length) { box.innerHTML = '<p class="hint" style="grid-column:1/-1">No pictures in this file yet. Upload one, then paste its path into the top block.</p>'; return; }
+        found.forEach(function (p) {
+          if (!picNodes[p]) {
+            var fig = document.createElement('figure'); fig.className = 'pic';
+            var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'picbtn'; btn.setAttribute('aria-label', 'View ' + p.split('/').pop() + ' larger');
+            var img = document.createElement('img'); img.alt = 'Preview of ' + p.split('/').pop(); img.loading = 'lazy';
+            var cap = document.createElement('figcaption'); cap.textContent = p.replace(/^src\/assets\//, '');
+            img.addEventListener('error', function () { fig.classList.add('missing'); fig.innerHTML = 'Not uploaded yet'; var c = document.createElement('figcaption'); c.textContent = cap.textContent; fig.appendChild(c); if (fig._x) fig.appendChild(fig._x); });
+            img.src = '/api/edit/image?path=' + encodeURIComponent(p) + (bust[p] ? '&v=' + bust[p] : '');
+            btn.appendChild(img); fig.appendChild(btn); fig.appendChild(cap);
+            if (current.kind !== 'about') {
+              var x = document.createElement('button'); x.type = 'button'; x.className = 'picx'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove ' + p.split('/').pop() + ' from this section');
+              x.addEventListener('click', function () { dropPicture(p); });
+              fig.appendChild(x); fig._x = x;
+            }
+            picNodes[p] = fig;
+          }
+          box.appendChild(picNodes[p]);
+        });
+      }
+
+      function openFile(path) {
+        main.innerHTML = '<h2>Loading…</h2>';
         api('/api/edit/file?path=' + encodeURIComponent(path)).then(function (r) {
           if (r.status === 401) { location.reload(); return; }
           if (!r.ok) { main.textContent = r.data.error || 'Could not open that file.'; return; }
           current = { path: path, kind: r.data.kind, sha: r.data.sha };
           dirty = false; renderSide();
-          if (r.data.kind === 'site') renderSite(r.data.text); else renderMd(r.data.text);
+          renderDoc(r.data.text);
           main.focus();
         });
       }
 
-      function renderMd(text) {
-        var p = splitFM(text);
+      function renderDoc(text) {
+        var isMd = current.kind !== 'site';
+        var title = current.kind === 'site' ? files.site.label : current.kind === 'about' ? files.about.label : ((/^title:\s*"?(.*?)"?\s*$/m.exec(text) || [])[1] || current.path);
         main.innerHTML =
-          '<div class="row between"><div><h2 id="fname"></h2><div class="path"></div></div><button class="btn" id="save" type="button">Save</button></div>' +
+          '<div class="bar"><div><h2 id="fname"></h2><div class="path"></div></div><button class="btn" id="save" type="button">Save</button></div>' +
           '<p id="msg" class="status" role="status" aria-live="polite"></p>' +
-          '<details class="help"><summary>How to edit this</summary>' + (HELP[current.kind] || '') + '</details>' +
-          '<div class="field"><label for="fm">Details</label><textarea id="fm" rows="11" spellcheck="false"></textarea><p class="hint">Keep the format of each line (name, colon, value). Quotes around text are fine.</p></div>' +
-          '<div class="split"><div class="field"><label for="body">Text</label><textarea id="body" rows="18"></textarea></div>' +
-          '<div class="field"><label>Preview of the text</label><div class="preview" id="prev"></div></div></div>';
-        $('#fname').textContent = (/^title:\s*"?(.*?)"?\s*$/m.exec(p.fm) || [])[1] || current.path;
+          '<details class="help"><summary>Example text template</summary><p>Compare your file with this example, or copy it to start from. Lines starting with <code>#</code> are notes to you.</p><pre class="tpl" id="tpl" tabindex="0"></pre><button class="btn ghost small" id="copytpl" type="button">Copy the template</button></details>' +
+          '<div class="field"><label for="doc">' + (isMd ? 'The page file' : 'The settings file') + '</label><textarea id="doc" rows="30" spellcheck="false"></textarea></div>' +
+          (isMd ? '<details class="prevwrap" open><summary>Preview of the text</summary><div class="preview" id="prev"></div></details>' +
+            '<details class="prevwrap" open><summary>Pictures in this file</summary>' + '<div class="pics" id="pics"></div><p id="pic-msg" class="status" role="status" aria-live="polite"></p>' + addPicBox() + '</details>' : '');
+        $('#tpl').textContent = TEMPLATES[current.kind] || '';
+        $('#copytpl').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(TEMPLATES[current.kind] || ''); $('#copytpl').textContent = 'Copied'; });
+        $('#fname').textContent = title;
         $('.path', main).textContent = current.path;
-        $('#fm').value = p.fm; $('#body').value = p.body; $('#prev').innerHTML = md(p.body);
-        $('#body').addEventListener('input', function () { $('#prev').innerHTML = md($('#body').value); dirty = true; });
-        $('#fm').addEventListener('input', function () { dirty = true; });
-        $('#save').addEventListener('click', saveMd);
+        var doc = $('#doc'); doc.value = text;
+        picNodes = {};
+        if (isMd) { $('#prev').innerHTML = md(bodyOf(text)); refreshPics(text); }
+        doc.addEventListener('input', function () {
+          dirty = true;
+          if (isMd) { $('#prev').innerHTML = md(bodyOf(doc.value)); clearTimeout(picTimer); picTimer = setTimeout(function () { refreshPics(doc.value); }, 350); }
+        });
+        $('#save').addEventListener('click', saveDoc);
+        if (isMd) wireAddPic();
       }
 
-      function saveMd() {
+      function saveDoc() {
         var msg = $('#msg'), btn = $('#save');
-        var text = '---\n' + $('#fm').value.replace(/\s+$/, '') + '\n---\n\n' + $('#body').value.replace(/\s+$/, '') + '\n';
         btn.disabled = true; setStatus(msg, 'Saving…');
-        api('/api/edit/file', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: current.path, text: text, sha: current.sha }) })
+        api('/api/edit/file', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: current.path, text: $('#doc').value, sha: current.sha }) })
           .then(function (r) {
             btn.disabled = false;
             if (r.status === 401) { location.reload(); return; }
@@ -278,56 +559,16 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           ? '---\ntitle: "' + t + '"\noutcome: "One line that sums up the project."\nrole: "Your role"\norg: "Organization"\ndates: "2024"\ntools: []\ntracks: [learning-design]\norder: ' + n + '\ndraft: true\n---\n\n### Context\n\nWrite the description here.\n'
           : '---\nlabel: "Tag"\nperiod: "2024 – Present"\ntitle: "' + t + '"\norder: ' + n + '\nskills: ["Skill one", "Skill two"]\n---\n\nWrite a few sentences about this stretch of your career.\n';
         api('/api/edit/file', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: path, text: text }) }).then(function (r) {
-          if (r.ok) { loadList().then(function () { openFile(path, kind); }); }
+          if (r.ok) { loadList().then(function () { openFile(path); }); }
           else alert((r.data.error || 'Could not create it.') + ((r.data.problems || []).length ? '\n- ' + r.data.problems.join('\n- ') : ''));
         });
       }
 
-      /* ---------- Site details form ---------- */
-      function renderSite(text) {
-        var d; try { d = JSON.parse(text); } catch (e) { main.textContent = 'Could not read the site details.'; return; }
-        var h = '<div class="row between"><div><h2>Site details</h2><div class="path">' + esc(current.path) + '</div></div><button class="btn" id="save" type="button">Save</button></div>' +
-          '<p id="msg" class="status" role="status" aria-live="polite"></p>' +
-          '<div class="field"><label for="s-name">Your name</label><input id="s-name" type="text" /></div>' +
-          '<div class="field"><label for="s-email">Contact email</label><input id="s-email" type="email" /><p class="hint">Shown in the footer and used by the Contact button.</p></div>' +
-          '<div class="field"><label>Links in the footer</label><div id="s-links"></div><button class="btn ghost small" id="add-link" type="button">+ Add a link</button><p class="hint">Leave the address empty to hide a link.</p></div>' +
-          '<div class="field"><label for="s-reasons">Contact form reasons</label><textarea id="s-reasons" rows="8" style="font-family:inherit"></textarea><p class="hint">One per line, up to 12. These fill the dropdown in the contact form.</p></div>';
-        main.innerHTML = h;
-        $('#s-name').value = d.name || ''; $('#s-email').value = d.email || '';
-        $('#s-reasons').value = (d.contactReasons || []).join('\n');
-        var box = $('#s-links');
-        function addLink(l) {
-          var row = document.createElement('div'); row.className = 'linkrow';
-          row.innerHTML = '<input type="text" aria-label="Link name" placeholder="Name, e.g. LinkedIn" /><input type="url" aria-label="Link address" placeholder="https://…" /><button class="btn ghost small" type="button" aria-label="Remove this link">Remove</button>';
-          $('input:nth-child(1)', row).value = l.label || ''; $('input:nth-child(2)', row).value = l.url || '';
-          $('button', row).addEventListener('click', function () { row.remove(); dirty = true; });
-          box.appendChild(row);
-        }
-        (d.links || []).forEach(addLink);
-        $('#add-link').addEventListener('click', function () { addLink({}); dirty = true; });
-        main.addEventListener('input', function () { dirty = true; });
-        $('#save').addEventListener('click', function () {
-          var msg = $('#msg'), btn = $('#save');
-          var links = Array.prototype.map.call(box.children, function (row) {
-            return { label: $('input:nth-child(1)', row).value.trim(), url: $('input:nth-child(2)', row).value.trim() };
-          }).filter(function (l) { return l.label; });
-          var payload = { name: $('#s-name').value.trim(), email: $('#s-email').value.trim(), links: links,
-            contactReasons: $('#s-reasons').value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean) };
-          btn.disabled = true; setStatus(msg, 'Saving…');
-          api('/api/edit/file', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: current.path, text: JSON.stringify(payload), sha: current.sha }) }).then(function (r) {
-            btn.disabled = false;
-            if (r.status === 401) { location.reload(); return; }
-            if (r.ok) { current.sha = r.data.sha; dirty = false; setStatus(msg, mode === 'GitHub' ? 'Saved. The live site updates in about a minute.' : 'Saved to the local files.', 'ok'); }
-            else setStatus(msg, r.data.error || 'Could not save.', 'error', r.data.problems);
-          });
-        });
-      }
-
       /* ---------- Uploads ---------- */
-      function openUploads() {
-        current = { path: 'uploads' }; dirty = false; renderSide();
+      function openUploads(preset) {
+        current = { path: preset === 'resume' ? 'uploads:resume' : 'uploads' }; dirty = false; renderSide();
         var resumes = files.resumes.map(function (r) { return '<option value="' + esc(r.id) + '">' + esc(r.title) + '</option>'; }).join('');
-        main.innerHTML = '<h2>Upload pictures, files and resumes</h2>' +
+        main.innerHTML = '<h2>' + (preset === 'resume' ? 'Replace a resume' : 'Upload pictures and files') + '</h2>' +
           '<p class="hint">Pictures are shrunk to a web-friendly size automatically. Files can be up to 4 MB.</p>' +
           '<form id="up" novalidate><div class="field"><label for="u-target">What are you uploading?</label><select id="u-target">' +
           '<option value="work-image">A picture for a case study</option><option value="timeline-image">A picture for My Journey</option>' +
@@ -335,8 +576,11 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           '<option value="resume">A resume PDF (replaces that resume)</option></select></div>' +
           '<div class="field" id="u-resume-wrap" hidden><label for="u-resume">Which resume?</label><select id="u-resume">' + resumes + '</select></div>' +
           '<div class="field"><label for="u-file">Choose the file</label><input id="u-file" type="file" /></div>' +
-          '<button class="btn" type="submit">Upload</button><p id="u-msg" class="status" role="status" aria-live="polite"></p><div id="u-result"></div></form>';
-        $('#u-target').addEventListener('change', function () { $('#u-resume-wrap').hidden = $('#u-target').value !== 'resume'; });
+          '<button class="btn" type="submit">Upload</button><p id="u-msg" class="status" role="status" aria-live="polite" style="margin-top:12px"></p><div id="u-result"></div></form>';
+        var t = $('#u-target');
+        if (preset === 'resume') t.value = 'resume';
+        function sync() { $('#u-resume-wrap').hidden = t.value !== 'resume'; }
+        t.addEventListener('change', sync); sync();
         $('#up').addEventListener('submit', doUpload);
       }
 
@@ -365,7 +609,9 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         out.innerHTML = '';
         if (!f) { setStatus(msg, 'Choose a file first.', 'error'); return; }
         setStatus(msg, 'Uploading…');
+        var sent = null;
         prepare(f, target).then(function (file) {
+          sent = file;
           var fd = new FormData(); fd.append('file', file); fd.append('target', target); fd.append('resumeId', $('#u-resume').value);
           return api('/api/edit/upload', { method: 'POST', body: fd });
         }).then(function (r) {
@@ -373,13 +619,36 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           if (!r.ok) { setStatus(msg, r.data.error || 'Upload failed.', 'error'); return; }
           setStatus(msg, (r.data.replaced ? 'Replaced. ' : 'Uploaded. ') + (mode === 'GitHub' ? 'It appears on the live site in about a minute.' : ''), 'ok');
           var ref = r.data.reference;
-          var use = target === 'work-image' || target === 'timeline-image' ? 'Paste this as the <code>src:</code> of a picture in the Details box of the case study or step.'
-            : target === 'artifact' ? 'Paste this as the <code>url:</code> of an artifact in the Details box of a case study.'
+          var use = target === 'work-image' || target === 'timeline-image' ? 'Paste this as the <code>src:</code> of a picture in the file you are editing (at the top, between the <code>---</code> lines).'
+            : target === 'artifact' ? 'Paste this as the <code>url:</code> of an artifact in the case study file.'
             : target === 'headshot' ? 'Your headshot is replaced. Nothing else to do.' : 'That resume is replaced. Nothing else to do.';
-          out.innerHTML = '<div class="result"><p>' + use + '</p><p><code id="ref">' + esc(ref) + '</code> <button class="btn ghost small" id="copy" type="button">Copy</button></p></div>';
+          out.innerHTML = '<div class="result"><p>' + use + '</p><p><code id="ref">' + esc(ref) + '</code> <button class="btn ghost small" id="copy" type="button">Copy</button></p>' + (sent && /^image\//.test(sent.type) ? '<img class="uppic" alt="Preview of the uploaded picture" src="' + URL.createObjectURL(sent) + '" />' : '') + '</div>';
           $('#copy').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(ref); $('#copy').textContent = 'Copied'; });
         });
       }
+
+      /* Click a picture to see it as large as the window allows, never bigger than the screen. */
+      var lb = $('#lightbox');
+      function fitViewer() {
+        var img = $('#lb-img'); if (!img.naturalWidth) return;
+        var bar = $('.lb-bar', lb).offsetHeight || 46;
+        var maxW = window.innerWidth * 0.96 - 2, maxH = window.innerHeight * 0.96 - bar - 2;
+        var s = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight); // as big as the window allows
+        img.style.width = Math.floor(img.naturalWidth * s) + 'px';
+        img.style.height = Math.floor(img.naturalHeight * s) + 'px';
+      }
+      $('#lb-img').addEventListener('load', fitViewer);
+      window.addEventListener('resize', function () { if (lb.open) fitViewer(); });
+      function zoom(src, name) {
+        var img = $('#lb-img'); img.style.width = ''; img.style.height = '';
+        img.src = src; $('#lb-name').textContent = name; lb.showModal(); fitViewer();
+      }
+      $('#lb-close').addEventListener('click', function () { lb.close(); });
+      lb.addEventListener('click', function (e) { if (e.target === lb) lb.close(); });
+      main.addEventListener('click', function (e) {
+        var img = e.target.closest('.picbtn img, .uppic'); if (!img) return;
+        zoom(img.src, img.alt.replace(/^Preview of /, ''));
+      });
 
       loadList();
     })();

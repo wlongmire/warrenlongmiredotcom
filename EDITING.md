@@ -25,13 +25,26 @@ Because each save is a commit, every change is in the history and can be undone.
 
 ## Using it
 
-- Pick a case study or journey step on the left. **Details** (the top box) are the named lines at the top of the
-  file; **Text** is the description. Press **Save**. The page checks everything before saving and says what to fix.
+- The list on the left follows the page from top to bottom, the same order visitors see it:
+  1 Top of the page ("Home page intro": the headline, your photo and the About me text), 2 My Journey, 3 Work History, 4 Resumes,
+  5 Footer & contact form. Case studies and journey steps are listed in their `order`.
+- Each item opens as **one continuous file**. The block between the two `---` lines at the top holds the details (dates,
+  tags, pictures); everything below is the text. Press **Save**. The page checks the whole file first and
+  says what to fix. A live preview of the text sits underneath, and a **Pictures in this file** strip shows every
+  picture the file mentions (or "Not uploaded yet" for one that is missing). The editor opens on "Home page intro".
+- The footer and contact form settings (name, email, footer links, contact-form reasons) are one short settings file
+  of `name: value` lines.
 - **+ New case study / + New step** makes a draft you can fill in. New case studies start with `draft: true`, which keeps
   them off the site until you remove that line (this is also how to hide one instead of deleting it).
-- **Upload** pictures first, then paste the path it gives you into the Details box (`src:` for a picture, `url:` for an
-  artifact). Pictures are shrunk automatically. Files can be up to 4 MB; bigger files must be added on github.com.
-- Resumes: Upload → "A resume PDF" → choose which one. The file name stays the same, so the cards just update.
+- **Pictures go right where you are editing.** In a case study, a journey step or the Home page intro, the *Pictures in this
+  file* panel has an **Add a picture** box: choose the picture, describe it in a few words, press *Upload and add*. It is
+  shrunk, uploaded, and added to that file's picture list for you (on the Home page intro it replaces the headshot).
+  Then press **Save**. Messages about pictures show right under them. Each picture has an **×** in its corner that takes
+  it out of the section's list (with an **Undo**, and nothing is published until you press Save; the uploaded file itself
+  stays in storage). The headshot can be replaced but not removed.
+- **Anywhere → Upload pictures & files** is still there for everything else: files to link from a case study (PDF, Word,
+  PowerPoint). Upload first, then paste the path it gives you (`url:` for an artifact). Pictures are shrunk automatically. Files can be up to 4 MB; bigger files must be added on github.com.
+- Resumes: "Replace a resume PDF" → choose which one. The file name stays the same, so the cards just update.
 
 ## The safety rules
 

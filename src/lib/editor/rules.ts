@@ -14,6 +14,12 @@ export function kindOf(path: string): Kind | null {
   if (path === 'src/data/site.json') return 'site';
   return null;
 }
+/** Pictures the editor may show a preview of: the site's own picture folders only. */
+export const IMAGE_TYPES: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+export function previewablePath(path: string): boolean {
+  if (path.includes('..')) return false;
+  return path === 'src/assets/headshot.jpg' || /^src\/assets\/(work|timeline)\/[A-Za-z0-9][A-Za-z0-9._-]*\.(jpe?g|png|webp)$/i.test(path);
+}
 export const canCreate = (path: string) => ['work', 'timeline'].includes(kindOf(path) ?? '');
 
 export const TRACKS = ['learning-design', 'teaching', 'engineering', 'design-ux'];
@@ -39,12 +45,12 @@ export async function validateMarkdown(path: string, text: string): Promise<stri
   const errors: string[] = [];
   if (Buffer.byteLength(text) > MAX_TEXT_BYTES) return ['This file is too large (limit 100 KB).'];
   const parts = splitFrontMatter(text);
-  if (!parts) return ['The Details box must stay between the two "---" lines at the top. Nothing was saved.'];
+  if (!parts) return ['The file must start with a block between two "---" lines (that is the top part). Nothing was saved.'];
   let data: unknown;
   try { data = yamlLoad(parts.fm); } catch (e: any) {
-    return [`The Details box has a formatting problem: ${String(e.reason ?? e.message ?? e).split('\n')[0]}`];
+    return [`The top block (between the "---" lines) has a formatting problem: ${String(e.reason ?? e.message ?? e).split('\n')[0]}`];
   }
-  if (!isObj(data)) return ['The Details box is empty or not formatted as "name: value" lines.'];
+  if (!isObj(data)) return ['The top block (between the "---" lines) is empty or not written as "name: value" lines.'];
   if (/<\s*(script|iframe|object|embed)\b/i.test(parts.body)) errors.push('The text may not contain <script>, <iframe>, <object> or <embed>.');
 
   const need = (k: string, type: 'string' | 'number' = 'string') => {
@@ -96,6 +102,7 @@ export async function validateMarkdown(path: string, text: string): Promise<stri
   } else if (kind === 'about') {
     need('title');
     const d = data as any;
+    if (d.tagline !== undefined && !isStr(d.tagline)) errors.push('"tagline" must be a line of text.');
     if (d.headshot !== undefined && !(isStr(d.headshot) && (await assetExists(path, d.headshot)))) errors.push('The headshot file has not been uploaded.');
   }
   return errors;

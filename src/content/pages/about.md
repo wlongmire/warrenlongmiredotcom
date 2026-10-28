@@ -1,5 +1,6 @@
 ---
 title: "About"
+tagline: "Developer of curriculum, software and learning experiences for learners like you."
 # Headshot lives at src/assets/headshot.jpg (upright, 1800px wide). Keep the alt text a short, plain description of the photo.
 headshot: "../../assets/headshot.jpg"
 headshotAlt: "Warren C. Longmire, in round glasses and a black shirt, with cloudy skies and mountains behind him"

@@ -59,6 +59,17 @@ export async function read(path: string): Promise<Doc | null> {
   return { text: Buffer.from(data.content ?? '', 'base64').toString('utf8'), sha: data.sha };
 }
 
+/** The raw bytes of a file (used to preview pictures). */
+export async function readBytes(path: string): Promise<Buffer | null> {
+  if (useLocal()) {
+    try { return await fs.readFile(abs(path)); } catch { return null; }
+  }
+  const res = await gh(path, { headers: { accept: 'application/vnd.github.raw+json' } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`GitHub said ${res.status} while reading ${path}.`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 /** Just the current version id of a file (null when it does not exist). */
 export async function shaOf(path: string): Promise<string | null> {
   if (useLocal()) {

@@ -33,6 +33,7 @@ const pages = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/pages' }),
   schema: ({ image }) => z.object({
     title: z.string(),
+    tagline: z.string().optional(),   // the big line at the top of the home page
     description: z.string().optional(),
     headshot: image().optional(),
     headshotAlt: z.string().optional(),

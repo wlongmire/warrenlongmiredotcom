@@ -7,15 +7,18 @@ export const prerender = false;
 
 const titleOf = (text: string, fallback: string) =>
   text.match(/^title:\s*"?(.*?)"?\s*$/m)?.[1]?.trim() || fallback;
+const orderOf = (text: string) => Number(text.match(/^order:\s*(\d+)/m)?.[1] ?? 999);
 
 async function group(dir: string) {
   const files = (await list(dir)).filter((f) => f.name.endsWith('.md'));
-  return Promise.all(
+  const items = await Promise.all(
     files.map(async (f) => {
       const doc = await read(f.path);
-      return { path: f.path, name: f.name, label: titleOf(doc?.text ?? '', f.name) };
+      return { path: f.path, name: f.name, label: titleOf(doc?.text ?? '', f.name), order: orderOf(doc?.text ?? '') };
     }),
   );
+  // The same order they appear on the site.
+  return items.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -28,8 +31,8 @@ export const GET: APIRoute = async ({ request }) => {
       mode: storageMode(),
       work,
       timeline,
-      about: { path: 'src/content/pages/about.md', label: 'About me' },
-      site: { path: 'src/data/site.json', label: 'Site details' },
+      about: { path: 'src/content/pages/about.md', label: 'Home page intro' },
+      site: { path: 'src/data/site.json', label: 'Footer & contact form' },
       resumes: resumeFiles(),
     });
   } catch (e: any) {

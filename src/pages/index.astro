@@ -61,7 +61,7 @@ const roleLine = (d: (typeof workEntries)[number]['data']) =>
           <div class="hero-img-empty" aria-hidden="true">WL</div>
         )}
       </div>
-      <h1 id="hero-title">{identityLine}</h1>
+      <h1 id="hero-title">{about!.data.tagline ?? identityLine}</h1>
       <section id="about" class="about-card" aria-labelledby="about-title">
         <h2 id="about-title">About me</h2>
         <Content />

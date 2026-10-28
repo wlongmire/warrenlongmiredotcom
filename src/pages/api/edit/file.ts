@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { dump as yamlDump, load as yamlLoad } from 'js-yaml';
 import { guard, json } from '../../../lib/editor/auth';
 import { Conflict, read, shaOf, write } from '../../../lib/editor/storage';
 import { canCreate, kindOf, validateMarkdown, validateSite } from '../../../lib/editor/rules';
@@ -16,6 +17,11 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     const doc = await read(path);
     if (!doc) return json({ error: 'That file was not found.' }, 404);
+    if (kind === 'site') {
+      // Shown as a plain text file; the contact-form address is not part of it.
+      const { contactEndpoint, ...rest } = JSON.parse(doc.text);
+      return json({ path, kind, text: yamlDump(rest, { lineWidth: 100 }), sha: doc.sha });
+    }
     return json({ path, kind, text: doc.text, sha: doc.sha });
   } catch (e: any) {
     return json({ error: e.message }, 502);
@@ -39,7 +45,11 @@ async function save(request: Request, creating: boolean) {
 
     let errors: string[];
     if (kind === 'site') {
-      const r = validateSite(text, (await read(path))?.text ?? null);
+      let asJson: string;
+      try { asJson = JSON.stringify(yamlLoad(text)); } catch (e: any) {
+        return json({ error: 'Not saved. Please fix this first:', problems: [`That text has a formatting problem: ${String(e.reason ?? e.message ?? e).split('\n')[0]}`] }, 422);
+      }
+      const r = validateSite(asJson, (await read(path))?.text ?? null);
       errors = r.errors; text = r.text;
     } else {
       text = text.replace(/\r\n/g, '\n').replace(/\s+$/, '') + '\n';
