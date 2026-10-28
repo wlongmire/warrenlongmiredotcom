@@ -58,14 +58,23 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
 
     .side { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 12px; align-self: start; position: sticky; top: 78px; max-height: calc(100vh - 100px); overflow: auto; }
     @media (max-width: 880px) { .side { position: static; max-height: none; } }
-    .side h2 { font: 600 12px 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 18px 0 6px 8px; display: flex; gap: 8px; align-items: center; }
+    /* Section titles are the big headings; the items under each one are smaller and indented. */
+    .side h2 { font: 600 19px/1.25 'Fraunces', Georgia, serif; color: var(--accent); margin: 24px 0 6px 4px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
     .side h2:first-child { margin-top: 2px; }
-    .side h2 .n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 11px; }
-    .side ul { list-style: none; margin: 0; padding: 0; }
-    .side li button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 7px 10px; cursor: pointer; color: var(--ink); }
-    .side li button:hover { background: var(--raised); }
-    .side li button[aria-current='true'] { background: var(--raised); box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; }
-    .newbtn { margin: 6px 0 0 10px; }
+    .side ul { list-style: none; margin: 0 0 0 12px; padding: 0 0 0 10px; border-left: 1px solid var(--line); }
+    .side li button { width: 100%; text-align: left; background: transparent; border: 0; border-radius: 6px; padding: 6px 10px; font-size: 14px; line-height: 1.35; cursor: pointer; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .side li button:hover { background: var(--raised); color: var(--ink); }
+    .side li button[aria-current='true'] { background: var(--raised); box-shadow: inset 3px 0 0 var(--accent); font-weight: 600; color: var(--ink); }
+    .newbtn { margin: 8px 0 0 22px; font-size: 13px; }
+    /* Drag and drop: the handle on the left of each item moves it. */
+    .side ul.sortable li { display: flex; align-items: center; gap: 2px; border-radius: 6px; }
+    .side ul.sortable li button.grip { flex: none; width: 22px; padding: 6px 0; text-align: center; cursor: grab; touch-action: none; color: var(--muted); font-size: 15px; letter-spacing: -2px; }
+    .side ul.sortable li button.grip:hover { color: var(--accent); background: transparent; }
+    .side ul.sortable li button.itembtn { flex: 1; width: auto; min-width: 0; }
+    .side ul.sortable li.dragging { position: relative; z-index: 3; background: var(--raised); box-shadow: 0 8px 22px rgba(0,0,0,.5); }
+    .side ul.sortable li.dragging button.grip { cursor: grabbing; color: var(--accent); }
+    #side-msg { min-height: 0; margin: 0 0 4px 4px; font-size: 14px; }
+    #side-msg:not(:empty) { margin-bottom: 12px; }
 
     .main { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0 22px 22px; min-height: 380px; }
     .bar { position: sticky; top: 56px; z-index: 5; background: var(--card); padding: 18px 0 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
@@ -87,6 +96,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     .addpic label { margin-top: 10px; }
     .addpic label:first-child { margin-top: 0; }
     .addpic input[type='file'] { padding: 7px; }
+    .addpic #ap-details label:first-child { margin-top: 10px; }
     .addpic .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
     .pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 12px; padding-top: 10px; }
     .pic { position: relative; margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -94,6 +104,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
     .pic .picx:hover { background: var(--bad); border-color: var(--bad); color: #0b1426; }
     #pic-msg { margin-top: 12px; }
     #pic-msg .btn { margin-left: 8px; }
+    .pic .vidlink { display: block; width: 100%; background: #000; }
     .pic .picbtn { display: block; width: 100%; padding: 0; border: 0; background: #000; cursor: zoom-in; }
     .pic img { display: block; width: 100%; height: 190px; object-fit: contain; background: #000; }
     .pic figcaption { padding: 6px 8px; font: 12px ui-monospace, Menlo, Consolas, monospace; color: var(--muted); word-break: break-all; }
@@ -215,30 +226,36 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         var on = current && current.path === path ? ' aria-current="true"' : '';
         return '<li><button type="button" ' + attrs + on + '>' + esc(label) + '</button></li>';
       }
-      function head(n, title) { return '<h2><span class="n">' + n + '</span>' + esc(title) + '</h2>'; }
+      function head(title) { return '<h2>' + esc(title) + '</h2>'; }
+      /* My Journey and Work History: each item has a handle to drag (or use the up/down arrow keys on it). */
+      function sortableList(kind, arr) {
+        return '<ul class="sortable" data-kind="' + kind + '">' + arr.map(function (f) {
+          var on = current && current.path === f.path ? ' aria-current="true"' : '';
+          return '<li data-id="' + esc(f.name.replace(/\.md$/, '')) + '"><button type="button" class="grip" title="Drag to reorder" aria-label="Move ' + esc(f.label) + '. Drag it, or use the up and down arrow keys.">⠿</button>' +
+            '<button type="button" class="itembtn" title="' + esc(f.title || f.label) + '" data-open="' + esc(f.path) + '"' + on + '>' + esc(f.label) + '</button></li>';
+        }).join('') + '</ul>';
+      }
       function renderSide() {
-        var h = '';
-        h += head(1, 'Top of the page');
+        var h = '<p id="side-msg" class="status' + (sideMsg && sideMsg.kind ? ' ' + sideMsg.kind : '') + '" role="status" aria-live="polite">' + (sideMsg ? esc(sideMsg.text) : '') + '</p>';
+        h += head('Top of the page');
         h += '<ul>' + item(files.about.label, 'data-open="' + esc(files.about.path) + '"', files.about.path) + '</ul>';
-        h += head(2, 'My Journey');
-        h += '<ul>' + files.timeline.map(function (f) { return item(f.label, 'data-open="' + esc(f.path) + '"', f.path); }).join('') + '</ul>';
+        h += head('My Journey');
+        h += sortableList('timeline', files.timeline);
         h += '<button class="btn ghost small newbtn" type="button" data-new="timeline">+ New step</button>';
-        h += head(3, 'Work History');
-        h += '<ul>' + files.work.map(function (f) { return item(f.label, 'data-open="' + esc(f.path) + '"', f.path); }).join('') + '</ul>';
+        h += head('Work History');
+        h += sortableList('work', files.work);
         h += '<button class="btn ghost small newbtn" type="button" data-new="work">+ New case study</button>';
-        h += head(4, 'Resumes');
+        h += head('Resumes');
         h += '<ul>' + item('Replace a resume PDF', 'data-resume="1"', 'uploads:resume') + '</ul>';
-        h += head(5, 'Footer & contact form');
+        h += head('Footer & contact form');
         h += '<ul>' + item(files.site.label, 'data-open="' + esc(files.site.path) + '"', files.site.path) + '</ul>';
-        h += '<h2>Anywhere</h2><ul>' + item('Upload pictures & files', 'data-uploads="1"', 'uploads') + '</ul>';
         side.innerHTML = h;
       }
       side.addEventListener('click', function (e) {
-        var b = e.target.closest('button'); if (!b) return;
+        var b = e.target.closest('button'); if (!b || b.classList.contains('grip')) return;
         if (!confirmLeave()) return;
         if (b.dataset.open) openFile(b.dataset.open);
-        else if (b.dataset.uploads) openUploads();
-        else if (b.dataset.resume) openUploads('resume');
+        else if (b.dataset.resume) openResume();
         else if (b.dataset.new) newFile(b.dataset.new);
       });
 
@@ -253,13 +270,16 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         'dates: "2023–Present"',
         'tools: []',
         'tracks: [learning-design, teaching]   # learning-design, teaching, engineering, design-ux',
-        'order: 3                              # 1 shows first',
         'draft: false                          # true hides it from the site',
         '# Optional extras for the popup (delete what you do not need):',
-        'images:',
-        '  - src: "../../assets/work/your-picture.jpg"   # upload it first, then paste its path',
+        'media:                                         # pictures and videos, shown as a slideshow in this order',
+        '  - type: image',
+        '    src: "your-picture.jpg"                      # upload it first, then type its file name',
         '    alt: "Describe the picture in a short phrase"',
         '    fit: contain                                # or cover',
+        '  - type: video',
+        '    url: "https://youtu.be/XXXXXXXXXXX"',
+        '    title: "The title of the video"',
         'artifacts:',
         '  - label: "Name of a file"',
         '    url: "/artifacts/your-file.pdf"',
@@ -290,12 +310,11 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         'label: "Design"                 # the short tag shown first',
         'period: "2004 – 2009"           # the dates',
         'title: "Name of this stretch of your career"',
-        'order: 1                        # 1 = earliest',
         'skills: ["Skill one", "Skill two", "Skill three"]   # the small pills',
         '# Optional pictures and videos, shown as a slideshow in this order:',
         'media:',
         '  - type: image',
-        '    src: "../../assets/timeline/your-picture.jpg"   # upload it first, then paste its path',
+        '    src: "your-picture.jpg"                         # upload it first, then type its file name',
         '    alt: "Describe the picture in a short phrase"',
         '    fit: contain                                    # or cover',
         '  - type: video',
@@ -350,18 +369,20 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       }
 
       /* ---------- Add a picture right here, inside the section you are editing ---------- */
+      function addVideoBox() {
+        if (current.kind === 'about') return '';
+        return '<div class="addpic">' +
+          '<label for="av-url">Add a YouTube video to this ' + (current.kind === 'work' ? 'case study' : 'step') + '</label>' +
+          '<input id="av-url" type="url" placeholder="https://youtu.be/…" />' +
+          '<div class="row"><button class="btn" id="av-add" type="button">Add video</button></div>' +
+        '</div>';
+      }
       function addPicBox() {
         var about = current.kind === 'about';
         return '<div class="addpic">' +
           '<label for="ap-file">' + (about ? 'Replace the headshot photo' : 'Add a picture to this ' + (current.kind === 'work' ? 'case study' : 'step')) + '</label>' +
           '<input id="ap-file" type="file" accept="image/jpeg,image/png,image/webp" />' +
-          '<div id="ap-details" hidden>' +
-            '<label for="ap-alt">' + (about ? 'Describe the photo (read aloud by screen readers)' : 'Describe the picture in a few words (read aloud by screen readers)') + '</label>' +
-            '<input id="ap-alt" type="text" />' +
-            (about ? '' : '<label for="ap-fit">How should it show?</label><select id="ap-fit"><option value="contain">Show the whole picture</option><option value="cover">Fill the frame (may crop the edges)</option></select>') +
-            '<div class="row"><button class="btn" id="ap-add" type="button">' + (about ? 'Upload and replace' : 'Upload and add') + '</button></div>' +
-          '</div>' +
-          '<p class="hint">The picture is shrunk for the web, uploaded, and ' + (about ? 'swapped in for the current headshot.' : 'added to the picture list at the top of this file.') + ' Then press Save to publish.</p>' +
+          '<div class="row"><button class="btn" id="ap-add" type="button">' + (about ? 'Upload and replace' : 'Add Photo') + '</button></div>' +
         '</div>';
       }
       function yq(s) { return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
@@ -401,12 +422,37 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         if (kind === 'about') {
           lines = setLine(lines, 'headshot', yq(ref));
           if (alt) lines = setLine(lines, 'headshotAlt', yq(alt));
-        } else if (kind === 'work') {
-          lines = addListItem(lines, 'images', ['  - src: ' + yq(ref), '    alt: ' + yq(alt), '    fit: ' + fit]);
         } else {
-          lines = addListItem(lines, 'media', ['  - type: image', '    src: ' + yq(ref), '    alt: ' + yq(alt), '    fit: ' + fit]);
+          // just the file name: the site looks in the right folder for this kind of page
+          lines = addListItem(lines, 'media', ['  - type: image', '    src: ' + yq(ref.split('/').pop()), '    alt: ' + yq(alt), '    fit: ' + fit]);
         }
         return lines.join('\n');
+      }
+      function insertVideo(text, url) {
+        var lines = text.replace(/\r\n/g, '\n').split('\n');
+        return addListItem(lines, 'media', ['  - type: video', '    url: ' + yq(url)]).join('\n');
+      }
+      function youtubeId(u) {
+        var m = String(u).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+        return m ? m[1] : null;
+      }
+      /* The videos listed in the file: items whose type is video. */
+      function videosIn(text) {
+        var lines = text.replace(/\r\n/g, '\n').split('\n'), end = frontBounds(lines), out = [];
+        if (end === null) return out;
+        for (var i = 1; i < end; i++) {
+          if (!/^\s*(-\s+)?type:\s*"?video"?\s*(#.*)?$/.test(lines[i])) continue;
+          var s = i; while (s > 1 && !/^\s*-\s/.test(lines[s])) s--;
+          var indent = lines[s].match(/^\s*/)[0].length, e = s + 1;
+          while (e < end && lines[e].trim() !== '' && lines[e].match(/^\s*/)[0].length > indent) e++;
+          var url = '', title = '';
+          for (var k = s; k < e; k++) {
+            var um = lines[k].match(/^\s*(?:-\s+)?url:\s*"?([^"#\n]*?)"?\s*(#.*)?$/); if (um) url = um[1];
+            var tm = lines[k].match(/^\s*(?:-\s+)?title:\s*"?([^"#\n]*?)"?\s*(#.*)?$/); if (tm) title = tm[1];
+          }
+          if (url) out.push({ url: url, title: title });
+        }
+        return out;
       }
       /* Takes one picture out of the file's list (the uploaded file itself stays in storage). */
       function removePicture(text, ref) {
@@ -415,11 +461,13 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         for (var guard = 0, found = true; found && guard < 20; guard++) {
           found = false;
           for (var i = 1; i < end; i++) {
-            if (lines[i].indexOf(ref) < 0 || !/^\s*(-\s+)?src:/.test(lines[i])) continue;
+            var vm = lines[i].match(/^\s*(?:-\s+)?(?:src|url):\s*"?([^"#\n]*?)"?\s*(?:#.*)?$/);
+            if (!vm || (vm[1] !== ref && !(ref.indexOf('../../assets/') === 0 && vm[1] === ref.split('/').pop()))) continue;
             var s = i; while (s > 1 && !/^\s*-\s/.test(lines[s])) s--;
             if (!/^\s*-\s/.test(lines[s])) break;
             var indent = lines[s].match(/^\s*/)[0].length, e = s + 1;
             while (e < end && lines[e].trim() !== '' && lines[e].match(/^\s*/)[0].length > indent) e++;
+            if (/^\s*(-\s+)?url:/.test(lines[i]) && !lines.slice(s, e).some(function (l) { return /type:\s*"?video/.test(l); })) continue;   // a link, not a video
             lines.splice(s, e - s); end -= (e - s); found = true;
             // if that was the last picture, the list becomes an empty list ("images: []")
             var k = s - 1; while (k > 0 && (lines[k].trim() === '' || /^#/.test(lines[k]))) k--;
@@ -440,15 +488,33 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         undo.addEventListener('click', function () { doc.value = before; doc.dispatchEvent(new Event('input')); refreshPics(before); setStatus(msg, 'Put back.', 'ok'); });
         msg.appendChild(undo);
       }
+      function dropVideo(url) {
+        var doc = $('#doc'), msg = $('#pic-msg'), before = doc.value, after = removePicture(before, url);
+        if (after === before) { setStatus(msg, 'That video is not in the list, so there is nothing to remove.', 'error'); return; }
+        doc.value = after; dirty = true; doc.dispatchEvent(new Event('input')); refreshPics(after);
+        setStatus(msg, 'Video removed from this section. Press Save to publish it.', 'ok');
+        var undo = document.createElement('button'); undo.type = 'button'; undo.className = 'btn ghost small'; undo.textContent = 'Undo';
+        undo.addEventListener('click', function () { doc.value = before; doc.dispatchEvent(new Event('input')); refreshPics(before); setStatus(msg, 'Put back.', 'ok'); });
+        msg.appendChild(undo);
+      }
+      function addVideo() {
+        var url = $('#av-url').value.trim(), msg = $('#pic-msg');
+        if (!youtubeId(url)) { setStatus(msg, 'Paste a YouTube link (like https://youtu.be/XXXXXXXXXXX).', 'error'); $('#av-url').focus(); return; }
+        var doc = $('#doc'); doc.value = insertVideo(doc.value, url);
+        dirty = true; doc.dispatchEvent(new Event('input')); refreshPics(doc.value);
+        $('#av-url').value = '';
+        setStatus(msg, 'Video added below. Press Save to publish it.', 'ok');
+      }
       function wireAddPic() {
+        var av = $('#av-add'); if (av) av.addEventListener('click', addVideo);
         var f = $('#ap-file'); if (!f) return;
-        f.addEventListener('change', function () { $('#ap-details').hidden = !f.files[0]; if (f.files[0]) $('#ap-alt').focus(); });
         $('#ap-add').addEventListener('click', addPicture);
       }
+      /* The picture's description is its file name, without the extension ("my-picture.jpg" becomes "my picture"). */
+      function altFromName(ref) { return ref.split('/').pop().replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim(); }
       function addPicture() {
-        var f = $('#ap-file').files[0], alt = $('#ap-alt').value.trim(), msg = $('#pic-msg'), kind = current.kind, btn = $('#ap-add');
+        var about = current.kind === 'about', f = $('#ap-file').files[0], msg = $('#pic-msg'), kind = current.kind, btn = $('#ap-add');
         if (!f) { setStatus(msg, 'Choose a picture first.', 'error'); return; }
-        if (kind !== 'about' && !alt) { setStatus(msg, 'Please describe the picture in a few words.', 'error'); $('#ap-alt').focus(); return; }
         var target = kind === 'work' ? 'work-image' : kind === 'timeline' ? 'timeline-image' : 'headshot';
         btn.disabled = true; setStatus(msg, 'Uploading…');
         prepare(f, target).then(function (file) {
@@ -458,12 +524,12 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           btn.disabled = false;
           if (r.status === 401) { location.reload(); return; }
           if (!r.ok) { setStatus(msg, r.data.error || 'Upload failed.', 'error'); return; }
-          var doc = $('#doc'), fit = $('#ap-fit') ? $('#ap-fit').value : 'contain';
+          var doc = $('#doc'), fit = 'contain', alt = about ? '' : altFromName(r.data.reference);
           doc.value = insertPicture(doc.value, kind, r.data.reference, alt, fit);
           dirty = true; doc.dispatchEvent(new Event('input'));
           var p = 'src/' + r.data.reference.slice(6); delete picNodes[p]; bust[p] = Date.now();
           refreshPics(doc.value);
-          $('#ap-file').value = ''; $('#ap-alt').value = ''; $('#ap-details').hidden = true;
+          $('#ap-file').value = '';
           setStatus(msg, kind === 'about' ? 'Headshot replaced. Press Save to publish it.' : 'Picture added below. Press Save to publish it.', 'ok');
           msg.scrollIntoView({ block: 'nearest' });
         });
@@ -475,8 +541,12 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         var box = $('#pics'); if (!box) return;
         var found = [], re = /\.\.\/\.\.\/assets\/[A-Za-z0-9._\/-]+\.(?:jpe?g|png|webp)/gi, m;
         while ((m = re.exec(text))) { var p = 'src/' + m[0].slice(6); if (found.indexOf(p) < 0) found.push(p); }
+        // pictures written as just a file name live in this kind of page's own folder
+        var bare = /^\s*(?:-\s+)?src:\s*"?([A-Za-z0-9][A-Za-z0-9._-]*\.(?:jpe?g|png|webp))"?\s*(?:#.*)?$/gim;
+        while ((m = bare.exec(text))) { var bp = 'src/assets/' + (current.kind === 'timeline' ? 'timeline' : 'work') + '/' + m[1]; if (found.indexOf(bp) < 0) found.push(bp); }
+        var vids = videosIn(text);
         box.innerHTML = '';
-        if (!found.length) { box.innerHTML = '<p class="hint" style="grid-column:1/-1">No pictures in this file yet. Upload one, then paste its path into the top block.</p>'; return; }
+        if (!found.length && !vids.length) { box.innerHTML = '<p class="hint" style="grid-column:1/-1">No pictures in this file yet. Upload one and it is added for you.</p>'; return; }
         found.forEach(function (p) {
           if (!picNodes[p]) {
             var fig = document.createElement('figure'); fig.className = 'pic';
@@ -494,6 +564,16 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
             picNodes[p] = fig;
           }
           box.appendChild(picNodes[p]);
+        });
+        vids.forEach(function (v) {
+          var id = youtubeId(v.url), fig = document.createElement('figure'); fig.className = 'pic';
+          var img = document.createElement('img'); img.alt = 'Thumbnail of the video ' + v.title; img.loading = 'lazy';
+          if (id) img.src = 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+          var cap = document.createElement('figcaption'); cap.textContent = 'Video: ' + (v.title || v.url);
+          var a = document.createElement('a'); a.href = v.url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'vidlink'; a.setAttribute('aria-label', 'Open the video ' + v.title + ' on YouTube'); a.appendChild(img);
+          var x = document.createElement('button'); x.type = 'button'; x.className = 'picx'; x.textContent = '×'; x.setAttribute('aria-label', 'Remove the video ' + v.title + ' from this section');
+          x.addEventListener('click', function () { dropVideo(v.url); });
+          fig.appendChild(a); fig.appendChild(cap); fig.appendChild(x); box.appendChild(fig);
         });
       }
 
@@ -518,7 +598,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           '<details class="help"><summary>Example text template</summary><p>Compare your file with this example, or copy it to start from. Lines starting with <code>#</code> are notes to you.</p><pre class="tpl" id="tpl" tabindex="0"></pre><button class="btn ghost small" id="copytpl" type="button">Copy the template</button></details>' +
           '<div class="field"><label for="doc">' + (isMd ? 'The page file' : 'The settings file') + '</label><textarea id="doc" rows="30" spellcheck="false"></textarea></div>' +
           (isMd ? '<details class="prevwrap" open><summary>Preview of the text</summary><div class="preview" id="prev"></div></details>' +
-            '<details class="prevwrap" open><summary>Pictures in this file</summary>' + '<div class="pics" id="pics"></div><p id="pic-msg" class="status" role="status" aria-live="polite"></p>' + addPicBox() + '</details>' : '');
+            '<details class="prevwrap" open><summary>' + (current.kind === 'about' ? 'Pictures in this file' : 'Pictures &amp; videos in this file') + '</summary>' + '<div class="pics" id="pics"></div><p id="pic-msg" class="status" role="status" aria-live="polite"></p>' + addPicBox() + addVideoBox() + '</details>' : '');
         $('#tpl').textContent = TEMPLATES[current.kind] || '';
         $('#copytpl').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(TEMPLATES[current.kind] || ''); $('#copytpl').textContent = 'Copied'; });
         $('#fname').textContent = title;
@@ -556,8 +636,8 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         var path = 'src/content/' + kind + '/' + name + '.md';
         var t = title.replace(/"/g, "'");
         var text = kind === 'work'
-          ? '---\ntitle: "' + t + '"\noutcome: "One line that sums up the project."\nrole: "Your role"\norg: "Organization"\ndates: "2024"\ntools: []\ntracks: [learning-design]\norder: ' + n + '\ndraft: true\n---\n\n### Context\n\nWrite the description here.\n'
-          : '---\nlabel: "Tag"\nperiod: "2024 – Present"\ntitle: "' + t + '"\norder: ' + n + '\nskills: ["Skill one", "Skill two"]\n---\n\nWrite a few sentences about this stretch of your career.\n';
+          ? '---\ntitle: "' + t + '"\noutcome: "One line that sums up the project."\nrole: "Your role"\norg: "Organization"\ndates: "2024"\ntools: []\ntracks: [learning-design]\ndraft: true\n---\n\n### Context\n\nWrite the description here.\n'
+          : '---\nlabel: "Tag"\nperiod: "2024 – Present"\ntitle: "' + t + '"\nskills: ["Skill one", "Skill two"]\n---\n\nWrite a few sentences about this stretch of your career.\n';
         api('/api/edit/file', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: path, text: text }) }).then(function (r) {
           if (r.ok) { loadList().then(function () { openFile(path); }); }
           else alert((r.data.error || 'Could not create it.') + ((r.data.problems || []).length ? '\n- ' + r.data.problems.join('\n- ') : ''));
@@ -565,22 +645,15 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       }
 
       /* ---------- Uploads ---------- */
-      function openUploads(preset) {
-        current = { path: preset === 'resume' ? 'uploads:resume' : 'uploads' }; dirty = false; renderSide();
+      function openResume() {
+        current = { path: 'uploads:resume' }; dirty = false; renderSide();
         var resumes = files.resumes.map(function (r) { return '<option value="' + esc(r.id) + '">' + esc(r.title) + '</option>'; }).join('');
-        main.innerHTML = '<h2>' + (preset === 'resume' ? 'Replace a resume' : 'Upload pictures and files') + '</h2>' +
-          '<p class="hint">Pictures are shrunk to a web-friendly size automatically. Files can be up to 4 MB.</p>' +
-          '<form id="up" novalidate><div class="field"><label for="u-target">What are you uploading?</label><select id="u-target">' +
-          '<option value="work-image">A picture for a case study</option><option value="timeline-image">A picture for My Journey</option>' +
-          '<option value="headshot">My headshot photo (replaces the current one)</option><option value="artifact">A file to link from a case study (PDF, Word, PowerPoint…)</option>' +
-          '<option value="resume">A resume PDF (replaces that resume)</option></select></div>' +
-          '<div class="field" id="u-resume-wrap" hidden><label for="u-resume">Which resume?</label><select id="u-resume">' + resumes + '</select></div>' +
-          '<div class="field"><label for="u-file">Choose the file</label><input id="u-file" type="file" /></div>' +
+        main.innerHTML = '<h2>Replace a resume</h2>' +
+          '<p class="hint">Choose which resume to replace, then pick the new PDF. The file name stays the same, so the card on the site just updates. PDFs can be up to 4 MB.</p>' +
+          '<form id="up" novalidate><input type="hidden" id="u-target" value="resume" />' +
+          '<div class="field"><label for="u-resume">Which resume?</label><select id="u-resume">' + resumes + '</select></div>' +
+          '<div class="field"><label for="u-file">Choose the PDF</label><input id="u-file" type="file" accept="application/pdf" /></div>' +
           '<button class="btn" type="submit">Upload</button><p id="u-msg" class="status" role="status" aria-live="polite" style="margin-top:12px"></p><div id="u-result"></div></form>';
-        var t = $('#u-target');
-        if (preset === 'resume') t.value = 'resume';
-        function sync() { $('#u-resume-wrap').hidden = t.value !== 'resume'; }
-        t.addEventListener('change', sync); sync();
         $('#up').addEventListener('submit', doUpload);
       }
 
@@ -622,10 +695,67 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
           var use = target === 'work-image' || target === 'timeline-image' ? 'Paste this as the <code>src:</code> of a picture in the file you are editing (at the top, between the <code>---</code> lines).'
             : target === 'artifact' ? 'Paste this as the <code>url:</code> of an artifact in the case study file.'
             : target === 'headshot' ? 'Your headshot is replaced. Nothing else to do.' : 'That resume is replaced. Nothing else to do.';
+          if (target === 'resume') { out.innerHTML = '<div class="result"><p>' + use + '</p></div>'; return; }  // nothing to copy for a resume
           out.innerHTML = '<div class="result"><p>' + use + '</p><p><code id="ref">' + esc(ref) + '</code> <button class="btn ghost small" id="copy" type="button">Copy</button></p>' + (sent && /^image\//.test(sent.type) ? '<img class="uppic" alt="Preview of the uploaded picture" src="' + URL.createObjectURL(sent) + '" />' : '') + '</div>';
           $('#copy').addEventListener('click', function () { navigator.clipboard && navigator.clipboard.writeText(ref); $('#copy').textContent = 'Copied'; });
         });
       }
+
+      /* ---------- Reordering: drag a handle (mouse or touch), or focus it and use the up/down arrow keys ---------- */
+      var sideMsg = null, drag = null, kbPrev = null, orderTimer = 0;
+      function showSideMsg(text, kind) {
+        sideMsg = text ? { text: text, kind: kind || '' } : null;
+        var el = $('#side-msg'); if (el) { el.className = 'status' + (kind ? ' ' + kind : ''); el.textContent = text || ''; }
+      }
+      function idsOf(ul) { return Array.prototype.map.call(ul.children, function (li) { return li.dataset.id; }); }
+      function applyOrder(kind, ids) {
+        var id = function (f) { return f.name.replace(/\.md$/, ''); };
+        files[kind].sort(function (a, b) { return ids.indexOf(id(a)) - ids.indexOf(id(b)); });
+      }
+      function saveOrder(kind, ids, previous) {
+        applyOrder(kind, ids); showSideMsg('Saving the new order…');
+        api('/api/edit/order', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: kind, ids: ids }) }).then(function (r) {
+          if (r.status === 401) { location.reload(); return; }
+          if (r.ok) showSideMsg(mode === 'GitHub' ? 'Order saved. The live site updates in about a minute.' : 'Order saved to the local files.', 'ok');
+          else { applyOrder(kind, previous); renderSide(); showSideMsg(r.data.error || 'Could not save the order.', 'error'); }
+        });
+      }
+      side.addEventListener('pointerdown', function (e) {
+        var grip = e.target.closest('.grip'); if (!grip || (e.pointerType === 'mouse' && e.button !== 0)) return;
+        var li = grip.closest('li'), ul = li.parentNode;
+        e.preventDefault(); grip.setPointerCapture(e.pointerId);
+        drag = { li: li, ul: ul, kind: ul.dataset.kind, before: idsOf(ul) };
+        li.classList.add('dragging'); document.body.style.cursor = 'grabbing';
+      });
+      side.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var others = Array.prototype.filter.call(drag.ul.children, function (x) { return x !== drag.li; }), next = null;
+        for (var k = 0; k < others.length; k++) { var r = others[k].getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) { next = others[k]; break; } }
+        if (next !== drag.li.nextElementSibling) drag.ul.insertBefore(drag.li, next);
+        var sr = side.getBoundingClientRect();   // scroll the list when dragging near its top or bottom edge
+        if (e.clientY < sr.top + 36) side.scrollTop -= 8; else if (e.clientY > sr.bottom - 36) side.scrollTop += 8;
+      });
+      function endDrag() {
+        if (!drag) return;
+        var d = drag; drag = null; d.li.classList.remove('dragging'); document.body.style.cursor = '';
+        var now = idsOf(d.ul); if (now.join() !== d.before.join()) saveOrder(d.kind, now, d.before);
+      }
+      side.addEventListener('pointerup', endDrag);
+      side.addEventListener('pointercancel', endDrag);
+      side.addEventListener('keydown', function (e) {
+        var grip = e.target.closest && e.target.closest('.grip');
+        if (!grip || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+        e.preventDefault();
+        var li = grip.closest('li'), ul = li.parentNode, before = idsOf(ul);
+        if (e.key === 'ArrowUp' && li.previousElementSibling) ul.insertBefore(li, li.previousElementSibling);
+        else if (e.key === 'ArrowDown' && li.nextElementSibling) ul.insertBefore(li.nextElementSibling, li);
+        else return;
+        grip.focus();
+        showSideMsg('Moved "' + li.querySelector('.itembtn').textContent + '" to position ' + (idsOf(ul).indexOf(li.dataset.id) + 1) + ' of ' + ul.children.length + '.');
+        if (!kbPrev) kbPrev = before;
+        var kind = ul.dataset.kind; clearTimeout(orderTimer);
+        orderTimer = setTimeout(function () { var now = idsOf(ul), prev = kbPrev; kbPrev = null; if (now.join() !== prev.join()) saveOrder(kind, now, prev); }, 700);
+      });
 
       /* Click a picture to see it as large as the window allows, never bigger than the screen. */
       var lb = $('#lightbox');

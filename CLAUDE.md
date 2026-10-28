@@ -27,6 +27,7 @@ audience: ""
 tools: []
 tracks: []           # any of: learning-design, teaching, engineering, design-ux
 cover: ""            # optional image path
+media: []            # optional popup slideshow: items of {type: image, src: "file-name.jpg", alt, fit} or {type: video, url, title}; pictures are named by file name only (looked up in src/assets/work or src/assets/timeline)
 confidential: false  # true = described/recreated, not original artifacts
 draft: false
 ```
@@ -36,7 +37,8 @@ Body sections, in order: Context, Approach, What I built, Outcome, Reflection.
 `/edit` (password-protected, content only) saves Markdown/uploads to GitHub, which redeploys the site. It runs as a few
 on-demand routes via `@astrojs/vercel`; every public page stays static. Code is in `src/lib/editor/` and
 `src/pages/edit/`, `src/pages/api/edit/`. Setup and safety rules: `EDITING.md`. Site-wide details live in
-`src/data/site.json` (read by `site.ts`). Keep new content fields editable: if you add a field to a content collection,
+`src/data/site.json` (read by `site.ts`). The order of case studies and journey steps lives in `src/data/order.json`
+(set by drag and drop on /edit; read by `src/lib/order.ts`), so content files have no `order:` field. Keep new content fields editable: if you add a field to a content collection,
 also add it to the checks in `src/lib/editor/rules.ts`.
 
 ## Rules

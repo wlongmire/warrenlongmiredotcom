@@ -33,6 +33,11 @@ const isStr = (v: unknown): v is string => typeof v === 'string' && v.trim() !==
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 async function assetExists(fromFile: string, ref: string): Promise<boolean> {
+  // A bare file name ("my-picture.jpg") lives in the folder for this kind of page.
+  if (/^[A-Za-z0-9][A-Za-z0-9._-]*\.(jpe?g|png|webp)$/i.test(ref)) {
+    const folder = kindOf(fromFile) === 'timeline' ? 'timeline' : 'work';
+    return (await shaOf(`src/assets/${folder}/${ref}`)) !== null;
+  }
   // "../../assets/x.jpg" written inside src/content/<collection>/ points at src/assets/x.jpg
   const m = ref.match(/^\.\.\/\.\.\/assets\/([A-Za-z0-9._\/-]+)$/);
   if (!m || m[1].includes('..')) return false;
@@ -64,6 +69,22 @@ export async function validateMarkdown(path: string, text: string): Promise<stri
       errors.push(`"${k}" must be a list where each item has a label and a url.`);
   };
 
+  // The pictures-and-videos list (the same format for case studies and journey steps).
+  const checkMedia = async (list: unknown) => {
+    if (list === undefined) return;
+    if (!Array.isArray(list)) { errors.push('"media" must be a list.'); return; }
+    for (const [i, m] of list.entries()) {
+      if (!isObj(m)) { errors.push(`media item ${i + 1} is not formatted correctly.`); continue; }
+      if (m.type === 'image') {
+        if (!isStr(m.src) || !isStr(m.alt)) errors.push(`media item ${i + 1} (picture) needs a src and an alt.`);
+        else if (!(await assetExists(path, m.src))) errors.push(`media item ${i + 1}: the picture "${m.src}" has not been uploaded.`);
+        if (m.fit !== undefined && !['contain', 'cover'].includes(m.fit as string)) errors.push(`media item ${i + 1}: fit must be contain or cover.`);
+      } else if (m.type === 'video') {
+        if (!isStr(m.url) || !/(youtu\.be\/|youtube\.com\/(watch\?|embed\/|shorts\/))/.test(m.url)) errors.push(`media item ${i + 1} (video) needs a YouTube link as its url.`);
+      } else errors.push(`media item ${i + 1}: type must be image or video.`);
+    }
+  };
+
   if (kind === 'work') {
     ['title', 'outcome', 'role', 'org', 'dates'].forEach((k) => need(k));
     const d = data as any;
@@ -72,6 +93,7 @@ export async function validateMarkdown(path: string, text: string): Promise<stri
     if (d.order !== undefined && typeof d.order !== 'number') errors.push('"order" must be a number.');
     if (d.draft !== undefined && typeof d.draft !== 'boolean') errors.push('"draft" must be true or false.');
     pairList('artifacts'); pairList('links');
+    await checkMedia(d.media);   // pictures and YouTube videos shown in the popup
     if (d.images !== undefined) {
       if (!Array.isArray(d.images)) errors.push('"images" must be a list.');
       else for (const [i, img] of d.images.entries()) {
@@ -82,23 +104,10 @@ export async function validateMarkdown(path: string, text: string): Promise<stri
     }
   } else if (kind === 'timeline') {
     ['title', 'period'].forEach((k) => need(k));
-    need('order', 'number');
     const d = data as any;
     if (d.skills !== undefined && (!Array.isArray(d.skills) || d.skills.some((s: unknown) => typeof s !== 'string'))) errors.push('"skills" must be a list of words or phrases.');
     if (d.link !== undefined && !(isObj(d.link) && typeof d.link.label === 'string' && typeof d.link.url === 'string')) errors.push('"link" needs a label and a url.');
-    if (d.media !== undefined) {
-      if (!Array.isArray(d.media)) errors.push('"media" must be a list.');
-      else for (const [i, m] of d.media.entries()) {
-        if (!isObj(m)) { errors.push(`media item ${i + 1} is not formatted correctly.`); continue; }
-        if (m.type === 'image') {
-          if (!isStr(m.src) || !isStr(m.alt)) errors.push(`media item ${i + 1} (image) needs a src and an alt.`);
-          else if (!(await assetExists(path, m.src))) errors.push(`media item ${i + 1}: the picture "${m.src}" has not been uploaded.`);
-          if (m.fit !== undefined && !['contain', 'cover'].includes(m.fit as string)) errors.push(`media item ${i + 1}: fit must be contain or cover.`);
-        } else if (m.type === 'video') {
-          if (!isStr(m.url) || !/(youtu\.be\/|youtube\.com\/(watch\?|embed\/|shorts\/))/.test(m.url)) errors.push(`media item ${i + 1} (video) needs a YouTube link as its url.`);
-        } else errors.push(`media item ${i + 1}: type must be image or video.`);
-      }
-    }
+    await checkMedia(d.media);
   } else if (kind === 'about') {
     need('title');
     const d = data as any;

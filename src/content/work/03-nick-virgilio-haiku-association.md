@@ -6,12 +6,12 @@ org: "Nick Virgilio Haiku Association"
 dates: "2023–Present"
 tools: []
 tracks: [learning-design, teaching, design-ux]
-order: 3
 links:
   - label: "Poetry Teaching for Camden Schools (NVHA)"
     url: "https://nickvirgiliohaiku.org/poetry-teaching-for-camden-schools/"
-images:                      # one image = single view, several = gallery
-  - src: "../../assets/work/03-nick-virgilio-logo.png"
+media:                         # pictures and videos, shown as a slideshow in this order
+  - type: image
+    src: "03-nick-virgilio-logo.png"
     alt: "NVHA Logo"
     fit: cover             # or cover, to crop to a wide banner
 artifacts:                     # files live in public/artifacts/

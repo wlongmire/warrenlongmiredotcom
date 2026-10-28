@@ -6,17 +6,18 @@ org: "Galvanize / Hack Reactor"
 dates: "2022–2024"
 tools: []
 tracks: [learning-design, teaching, engineering]
-order: 1
 links:
   - label: "Program launch (press release, May 2023)"
     url: "https://www.businesswire.com/news/home/20230530005012/en/38-Weeks-to-Prepare-for-a-New-Career-Galvanize-Announces-Part-Time-Hack-Reactor-Coding-Bootcamp"
-images:
-  - src: "../../assets/work/01-galvanize-hack-reactor.png"
+media:                         # pictures and videos, shown as a slideshow in this order
+  - type: image
+    src: "01-galvanize-hack-reactor.png"
     alt: "Galvanize logo"
-    fit: cover  
-  - src: "../../assets/work/galvanize-slides.png"
+    fit: cover
+  - type: image
+    src: "galvanize-slides.png"
     alt: "Galvanize Slides"
-    fit: cover  
+    fit: cover
 ---
 
 ### Context

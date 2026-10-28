@@ -6,7 +6,6 @@ org: "Bloom School of Technology"
 dates: "2020–2022"
 tools: []
 tracks: [learning-design, engineering]
-order: 2
 links:
   - label: "Advanced React sprint challenge (CodeGrade version)"
     url: "https://github.com/wlongmireBloomTech/web-sprint-challenge-advanced-react-solution"
@@ -14,8 +13,9 @@ links:
     url: "https://github.com/wlongmireBloomTech/sprint1-codegrade"
   - label: "CodeGrade–GitHub automation script"
     url: "https://github.com/wlongmireBloomTech/codegrade_github"
-images:                      # one image = single view, several = gallery
-  - src: "../../assets/work/02-bloom-school-of-technology.jpg"
+media:                         # pictures and videos, shown as a slideshow in this order
+  - type: image
+    src: "02-bloom-school-of-technology.jpg"
     alt: "bloomtech logo"
     fit: cover             # or cover, to crop to a wide banner
 # artifacts:                   # samples and files, e.g. url: "/artifacts/example.pdf" (put files in public/artifacts/)

@@ -6,12 +6,13 @@ import Resume from '../components/Resume.astro';
 import ContactDialog from '../components/ContactDialog.astro';
 import CaseDialog from '../components/CaseDialog.astro';
 import { site } from '../data/site';
+import { sortByOrder } from '../lib/order';
 import { trackLabel, identityLine, filters } from '../data/home';
 const about = await getEntry('pages', 'about');
 const { Content } = await render(about!);
 
-// Case study cards: every non-draft file in src/content/work, in `order`.
-const workEntries = (await getCollection('work', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
+// Case study cards: every non-draft file in src/content/work, in the order set on the /edit page (src/data/order.json).
+const workEntries = sortByOrder(await getCollection('work', (e) => !e.data.draft), 'work');
 const cases = await Promise.all(workEntries.map(async (entry) => ({ entry, Content: (await render(entry)).Content })));
 const roleLine = (d: (typeof workEntries)[number]['data']) =>
   `${d.role}${d.org && !d.title.includes(d.org) ? `, ${d.org}` : ''} · ${d.dates}`;

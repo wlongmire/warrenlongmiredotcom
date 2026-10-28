@@ -16,8 +16,25 @@ const work = defineCollection({
     cover: z.string().optional(),
     confidential: z.boolean().default(false),
     draft: z.boolean().default(false),
-    order: z.number().default(999),   // card order on the homepage (1 = first)
+    order: z.number().optional(),     // old style; the order now lives in src/data/order.json (drag and drop on /edit)
     // Shown in the "More info" popup. Every one of these is optional; empty ones are simply not shown.
+    // `media` is the picture-and-video slideshow at the top of the popup (same format as My Journey).
+    media: z.array(z.discriminatedUnion('type', [
+      z.object({
+        type: z.literal('image'),
+        src: z.string(),   // a picture file name, e.g. "my-picture.jpg" (or the older full path)
+        alt: z.string(),
+        caption: z.string().optional(),
+        fit: z.enum(['contain', 'cover']).default('contain'),
+      }),
+      z.object({
+        type: z.literal('video'),
+        url: z.string(),                                     // a YouTube link
+        title: z.string().default('Embedded video'),         // read aloud by screen readers
+        caption: z.string().optional(),
+      }),
+    ])).default([]),
+    // Older pictures-only list, still shown (before the media list) if a file has one:
     images: z.array(z.object({
       src: image(),
       alt: z.string(),
@@ -40,7 +57,7 @@ const pages = defineCollection({
   }),
 });
 
-// One file per career moment in src/content/timeline/. Sorted by `order` (1 = earliest).
+// One file per career moment in src/content/timeline/. Their order lives in src/data/order.json.
 const timeline = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/timeline' }),
   schema: ({ image }) => z.object({
@@ -48,7 +65,7 @@ const timeline = defineCollection({
     title: z.string(),
     period: z.string(),               // e.g. "2019 to 2021", shown as a label
     org: z.string().optional(),
-    order: z.number(),
+    order: z.number().optional(),     // old style; see src/data/order.json
     skills: z.array(z.string()).default([]),
     link: z.object({ label: z.string(), url: z.string() }).optional(), // shown only once url is filled in
     // The step's picture area is a slideshow of images and/or YouTube videos, in this order.
@@ -56,7 +73,7 @@ const timeline = defineCollection({
     media: z.array(z.discriminatedUnion('type', [
       z.object({
         type: z.literal('image'),
-        src: image(),
+        src: z.string(),   // a picture file name, e.g. "my-picture.jpg" (or the older full path)
         alt: z.string(),
         caption: z.string().optional(),
         fit: z.enum(['contain', 'cover']).default('cover'), // 'contain' shows the whole picture

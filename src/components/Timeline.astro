@@ -4,8 +4,10 @@
 // Without JavaScript every step is shown stacked; the script turns it into a one-at-a-time view.
 import { getCollection, render } from 'astro:content';
 import { Image } from 'astro:assets';
+import { sortByOrder } from '../lib/order';
+import { resolveMedia } from '../lib/media';
 
-const entries = (await getCollection('timeline')).sort((a, b) => a.data.order - b.data.order);
+const entries = sortByOrder(await getCollection('timeline'), 'timeline'); // order set on the /edit page (src/data/order.json)
 
 // Pull the video id out of a YouTube link (youtu.be/ID, watch?v=ID, embed/ID or shorts/ID).
 function youtubeId(url: string): string | null {
@@ -15,7 +17,7 @@ function youtubeId(url: string): string | null {
 // One list per step: the new `media` list, or the older single `image`.
 const mediaFor = (d: any) =>
   d.media.length > 0
-    ? d.media
+    ? resolveMedia('timeline', d.media)
     : d.image
       ? [{ type: 'image', src: d.image, alt: d.imageAlt ?? '', fit: 'cover' }]
       : [];

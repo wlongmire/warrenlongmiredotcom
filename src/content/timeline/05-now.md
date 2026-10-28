@@ -2,23 +2,22 @@
 label: "Now"
 period: "2022 – Present"
 title: "Designing the learning itself"
-order: 5
 skills: ["ADDIE development", "Bloom's Taxonomy", "Assessment design", "Backward design", "TypeScript / Next.js", "Prompt engineering"]
 media:                         # the picture area is a slideshow, in this order
   - type: image
-    src: "../../assets/timeline/05_Galvanize-slide.png"
+    src: "05_Galvanize-slide.png"
     alt: "A blue slide reading: A Bounded Context is a larger group of models, relationships and processes for an entire business concern."
     fit: contain
   - type: image
-    src: "../../assets/timeline/05_Galvanize-weekly-goals.png"
+    src: "05_Galvanize-weekly-goals.png"
     alt: "A Galvanize slide titled Goals for the Week, with four columns for Monday to Thursday listing topics such as domain-driven design, RESTful APIs and HTTP, and a lab for each day."
     fit: contain
   - type: image
-    src: "../../assets/timeline/05_Iowa_Graduation.png"
+    src: "05_Iowa_Graduation.png"
     alt: "A smiling man in glasses and a gray cardigan holds up his diploma from the Iowa Writers' Workshop while a laughing woman leans against him, with other graduates and families behind them."
     fit: contain
   - type: image
-    src: "../../assets/timeline/05_Tiny-truth.png"
+    src: "05_Tiny-truth.png"
     alt: "A page from The Tiny Truth Project prospectus, titled Healing Through Short-Form Poetry, with a photo of students in a classroom watching a teacher at a smartboard and a student's haiku on a red background."
     fit: contain
 ---

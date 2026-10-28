@@ -2,23 +2,22 @@
 label: "Lead"
 period: "2017 – 2019"
 title: "Leading teams"
-order: 3
 skills: ["React / Redux", "Node / Express", "AWS CI/CD", "TDD / BDD", "Facilitation"]
 media:                         # the picture area is a slideshow, in this order
   - type: image
-    src: "../../assets/timeline/03_Office.jpg"
+    src: "03_Office.jpg"
     alt: "A man in a gray sweater turns toward the camera in the foreground. Behind him a colleague smiles from behind a desktop monitor, in front of a wall of printed screen mockups with sticky notes."
     fit: contain
   - type: image
-    src: "../../assets/timeline/03_Whiteboard.jpg"
+    src: "03_Whiteboard.jpg"
     alt: "A glass whiteboard covered in handwritten planning notes: a table of user, admin and super roles with create, read and update permissions, API route sketches, and a diagram linking brokerages, users and submissions."
     fit: contain
   - type: image
-    src: "../../assets/timeline/03_SmartSearch.png"
+    src: "03_SmartSearch.png"
     alt: "The Argo Group SmartSearch Garage screen: Step 1 is a search form for a business name and location, and Step 2 shows a grid of matching auto service locations to choose from."
     fit: contain
   - type: image
-    src: "../../assets/timeline/03_OSeries.png"
+    src: "03_OSeries.png"
     alt: "The Vertex Indirect Tax O Series home screen, with panels for customer support, software version, announcements, training, solutions and documentation."
     fit: contain
 ---

@@ -26,12 +26,14 @@ Because each save is a commit, every change is in the history and can be undone.
 ## Using it
 
 - The list on the left follows the page from top to bottom, the same order visitors see it:
-  1 Top of the page ("Home page intro": the headline, your photo and the About me text), 2 My Journey, 3 Work History, 4 Resumes,
-  5 Footer & contact form. Case studies and journey steps are listed in their `order`.
+  Top of the page ("Home page intro": the headline, your photo and the About me text), My Journey, Work History, Resumes,
+  then Footer & contact form. **Drag the handle (⠿) on the left of an item** to reorder My Journey and Work History (or focus the handle and use the
+  up/down arrow keys). The new order saves right away as one small change; there is no order field to edit by hand.
+  New items start at the end of their list.
 - Each item opens as **one continuous file**. The block between the two `---` lines at the top holds the details (dates,
   tags, pictures); everything below is the text. Press **Save**. The page checks the whole file first and
-  says what to fix. A live preview of the text sits underneath, and a **Pictures in this file** strip shows every
-  picture the file mentions (or "Not uploaded yet" for one that is missing). The editor opens on "Home page intro".
+  says what to fix. A live preview of the text sits underneath, and a **Pictures & videos in this file** strip shows every
+  picture and YouTube video the file mentions (or "Not uploaded yet" for one that is missing). The editor opens on "Home page intro".
 - The footer and contact form settings (name, email, footer links, contact-form reasons) are one short settings file
   of `name: value` lines.
 - **+ New case study / + New step** makes a draft you can fill in. New case studies start with `draft: true`, which keeps
@@ -39,11 +41,12 @@ Because each save is a commit, every change is in the history and can be undone.
 - **Pictures go right where you are editing.** In a case study, a journey step or the Home page intro, the *Pictures in this
   file* panel has an **Add a picture** box: choose the picture, describe it in a few words, press *Upload and add*. It is
   shrunk, uploaded, and added to that file's picture list for you (on the Home page intro it replaces the headshot).
-  Then press **Save**. Messages about pictures show right under them. Each picture has an **×** in its corner that takes
+  Case studies and journey steps also have an **Add a YouTube video** box (a link and a title); videos and pictures play together
+  as one slideshow in the order they are listed. Then press **Save**. Messages about pictures show right under them. Each picture has an **×** in its corner that takes
   it out of the section's list (with an **Undo**, and nothing is published until you press Save; the uploaded file itself
   stays in storage). The headshot can be replaced but not removed.
-- **Anywhere → Upload pictures & files** is still there for everything else: files to link from a case study (PDF, Word,
-  PowerPoint). Upload first, then paste the path it gives you (`url:` for an artifact). Pictures are shrunk automatically. Files can be up to 4 MB; bigger files must be added on github.com.
+- Files to link from a case study (PDF, Word, PowerPoint) are not uploaded from this page. Add them on github.com in
+  `public/artifacts/`, then list them under `artifacts:` in the case study. Pictures are shrunk automatically. Files can be up to 4 MB; bigger files must be added on github.com.
 - Resumes: "Replace a resume PDF" → choose which one. The file name stays the same, so the cards just update.
 
 ## The safety rules
