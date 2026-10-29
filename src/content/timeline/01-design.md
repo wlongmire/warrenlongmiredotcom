@@ -1,5 +1,5 @@
 ---
-label: "Design test"
+label: "Design"
 period: "2004 – 2009"
 title: "Designing for engagement"
 skills: ["C# test automation", "Python tooling", "ActionScript", "Adobe Illustrator", "SME partnership"]
