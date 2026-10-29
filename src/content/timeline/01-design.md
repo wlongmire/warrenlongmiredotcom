@@ -6,12 +6,12 @@ skills: ["C# test automation", "Python tooling", "ActionScript", "Adobe Illustra
 media:
 # the picture area is a slideshow, in this order
   - type: image
+    src: "01_Early_Image.png"
+    alt: "Two people working at computers in a dimly lit office; one has headphones around his neck and is typing."
+  - type: image
     src: "01_The_Sims_3.jpg"
     alt: "The Sims 3 Xbox 360 game case, showing the back and front covers."
     fit: contain
-  - type: image
-    src: "01_Early_Image.png"
-    alt: "Two people working at computers in a dimly lit office; one has headphones around his neck and is typing."
   - type: video
     url: "https://www.youtube.com/watch?v=_AZWL54QUvQ"
     title: "Video from the Design years" 
