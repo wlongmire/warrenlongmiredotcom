@@ -52,7 +52,7 @@ const pages = defineCollection({
     title: z.string(),
     tagline: z.string().optional(),   // the big line at the top of the home page
     description: z.string().optional(),
-    headshot: image().optional(),
+    headshot: z.string().optional(),  // the photo's file name in src/assets/ (e.g. "headshot.jpg"); the older full path still works
     headshotAlt: z.string().optional(),
   }),
 });

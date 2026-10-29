@@ -206,6 +206,13 @@ test.describe('the editor', () => {
     await expect(page.getByRole('button', { name: 'Upload and replace' })).toBeVisible();
   });
 
+  test('the Home page intro points at the headshot by file name and still previews it', async ({ page }) => {
+    await expect(page.locator('#doc')).toHaveValue(/^headshot: "headshot\.jpg"/m);
+    const img = page.locator('#pics img').first();
+    await expect(img).toBeVisible();
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  });
+
   test('the Resumes page shows each resume slot', async ({ page }) => {
     await page.locator('[data-resume]').click();
     await expect(page.locator('#main')).toContainText('Instructional Design');

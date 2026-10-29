@@ -33,10 +33,11 @@ const isStr = (v: unknown): v is string => typeof v === 'string' && v.trim() !==
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
 async function assetExists(fromFile: string, ref: string): Promise<boolean> {
-  // A bare file name ("my-picture.jpg") lives in the folder for this kind of page.
+  // A bare file name ("my-picture.jpg") lives in the folder for this kind of page (the headshot, in src/assets itself).
   if (/^[A-Za-z0-9][A-Za-z0-9._-]*\.(jpe?g|png|webp)$/i.test(ref)) {
-    const folder = kindOf(fromFile) === 'timeline' ? 'timeline' : 'work';
-    return (await shaOf(`src/assets/${folder}/${ref}`)) !== null;
+    const kind = kindOf(fromFile);
+    const folder = kind === 'about' ? '' : kind === 'timeline' ? 'timeline/' : 'work/';
+    return (await shaOf(`src/assets/${folder}${ref}`)) !== null;
   }
   // "../../assets/x.jpg" written inside src/content/<collection>/ points at src/assets/x.jpg
   const m = ref.match(/^\.\.\/\.\.\/assets\/([A-Za-z0-9._\/-]+)$/);

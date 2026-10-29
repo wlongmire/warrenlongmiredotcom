@@ -7,9 +7,11 @@ import ContactDialog from '../components/ContactDialog.astro';
 import CaseDialog from '../components/CaseDialog.astro';
 import { site } from '../data/site';
 import { sortByOrder } from '../lib/order';
+import { resolveImage } from '../lib/media';
 import { trackLabel, identityLine, filters } from '../data/home';
 const about = await getEntry('pages', 'about');
 const { Content } = await render(about!);
+const headshot = about!.data.headshot ? resolveImage('root', about!.data.headshot) : null;
 
 // Case study cards: every non-draft file in src/content/work, in the order set on the /edit page (src/data/order.json).
 const workEntries = sortByOrder(await getCollection('work', (e) => !e.data.draft), 'work');
@@ -56,8 +58,8 @@ const roleLine = (d: (typeof workEntries)[number]['data']) =>
   <section class="hero-full" aria-labelledby="hero-title">
     <div class="hero-inner wrap">
       <div class="hero-img">
-        {about!.data.headshot ? (
-          <Image src={about!.data.headshot} alt={about!.data.headshotAlt ?? ''} width={900} loading="eager" />
+        {headshot ? (
+          <Image src={headshot} alt={about!.data.headshotAlt ?? ''} width={900} loading="eager" />
         ) : (
           <div class="hero-img-empty" aria-hidden="true">WL</div>
         )}

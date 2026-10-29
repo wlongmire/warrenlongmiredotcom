@@ -361,7 +361,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         '---',
         'title: "About"',
         'tagline: "The big line at the top of the home page."',
-        'headshot: "../../assets/headshot.jpg"',
+        'headshot: "headshot.jpg"',
         'headshotAlt: "A short description of your photo"',
         '---',
         '',
@@ -453,7 +453,7 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
       function insertPicture(text, kind, ref, alt, fit) {
         var lines = text.replace(/\r\n/g, '\n').split('\n');
         if (kind === 'about') {
-          lines = setLine(lines, 'headshot', yq(ref));
+          lines = setLine(lines, 'headshot', yq(ref.split('/').pop()));
           if (alt) lines = setLine(lines, 'headshotAlt', yq(alt));
         } else {
           // just the file name: the site looks in the right folder for this kind of page
@@ -726,6 +726,9 @@ Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
         if (current.kind !== 'about') { renderMedia(text); return; }
         var found = [], re = /\.\.\/\.\.\/assets\/[A-Za-z0-9._\/-]+\.(?:jpe?g|png|webp)/gi, m;
         while ((m = re.exec(text))) { var p = 'src/' + m[0].slice(6); if (found.indexOf(p) < 0) found.push(p); }
+        // the headshot written as just a file name lives in src/assets itself
+        var hs = text.match(/^headshot:\s*"?([A-Za-z0-9][A-Za-z0-9._-]*\.(?:jpe?g|png|webp))"?\s*(?:#.*)?$/m);
+        if (hs && found.indexOf('src/assets/' + hs[1]) < 0) found.push('src/assets/' + hs[1]);
         // pictures written as just a file name live in this kind of page's own folder
         var bare = /^\s*(?:-\s+)?src:\s*"?([A-Za-z0-9][A-Za-z0-9._-]*\.(?:jpe?g|png|webp))"?\s*(?:#.*)?$/gim;
         while ((m = bare.exec(text))) { var bp = 'src/assets/' + (current.kind === 'timeline' ? 'timeline' : 'work') + '/' + m[1]; if (found.indexOf(bp) < 0) found.push(bp); }

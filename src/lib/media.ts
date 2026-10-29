@@ -6,11 +6,12 @@ import type { ImageMetadata } from 'astro';
 
 const files = import.meta.glob<{ default: ImageMetadata }>('/src/assets/**/*.{jpg,jpeg,png,webp}', { eager: true });
 
-export function resolveImage(folder: 'work' | 'timeline', src: string): ImageMetadata {
+/** `folder` is where a bare file name is looked up: src/assets/work, src/assets/timeline, or src/assets itself ('root'). */
+export function resolveImage(folder: 'work' | 'timeline' | 'root', src: string): ImageMetadata {
   const clean = src.trim();
-  const key = clean.startsWith('../../assets/') ? `/src/assets/${clean.slice('../../assets/'.length)}` : `/src/assets/${folder}/${clean}`;
+  const key = clean.startsWith('../../assets/') ? `/src/assets/${clean.slice('../../assets/'.length)}` : (folder === 'root' ? `/src/assets/${clean}` : `/src/assets/${folder}/${clean}`);
   const hit = files[key];
-  if (!hit) throw new Error(`Picture "${src}" was not found. Upload it on the /edit page, or put it in src/assets/${folder}/.`);
+  if (!hit) throw new Error(`Picture "${src}" was not found. Upload it on the /edit page, or put it in src/assets/${folder === 'root' ? '' : folder + '/'}.`);
   return hit.default;
 }
 

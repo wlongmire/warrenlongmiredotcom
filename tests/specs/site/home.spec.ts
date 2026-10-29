@@ -19,6 +19,12 @@ test.describe('page basics', () => {
     expect(errors).toEqual([]);
   });
 
+  test('the headshot loads', async ({ page }) => {
+    const img = page.locator('.hero-img img');
+    await expect(img).toBeVisible();
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+  });
+
   test('main navigation is in page order', async ({ page }) => {
     const links = page.getByRole('navigation', { name: 'Main' }).getByRole('link');
     await expect(links).toHaveText(['About Me', 'My Journey', 'Work', 'Resumes']);
