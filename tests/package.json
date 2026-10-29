@@ -1,0 +1,16 @@
+{
+  "name": "warrenlongmire-site-tests",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests for warrenlongmire.com. Own dependencies, so the site and its Vercel build are untouched.",
+  "scripts": {
+    "install-browsers": "playwright install chromium",
+    "test": "playwright test",
+    "test:site": "playwright test --project=site --project=site-mobile",
+    "test:editor": "playwright test --project=editor",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}
