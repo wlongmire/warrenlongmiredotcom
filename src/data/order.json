@@ -12,8 +12,8 @@
     "10-inventxyz"
   ],
   "timeline": [
-    "02-build",
     "01-design",
+    "02-build",
     "03-lead",
     "04-teach",
     "05-now"
